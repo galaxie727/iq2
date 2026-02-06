@@ -204,34 +204,34 @@
 
   /* ===== ルール色分け（cardの枠色＆発光） ===== */
   .card{
-    --ruleGlow: rgba(52,243,160,0.18);
-    --ruleStroke: rgba(52,243,160,0.22);
-    box-shadow:
-      0 10px 30px rgba(0,0,0,0.35),
-      0 0 0 1px var(--ruleGlow) inset,
-      0 0 26px var(--ruleGlow);
-    border: 1px solid var(--ruleStroke);
-  }
+  --ruleGlow: rgba(52,243,160,0.35);
+  --ruleStroke: rgba(52,243,160,0.55);
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.35),
+    0 0 0 2px var(--ruleGlow) inset,
+    0 0 36px var(--ruleGlow);
+  border: 2px solid var(--ruleStroke);
+}
 
   .rule-xorxor, .rule-xoror, .rule-orxor{
-    --ruleGlow: rgba(52,243,160,0.18);
-    --ruleStroke: rgba(52,243,160,0.30);
-  }
+  --ruleGlow: rgba(52,243,160,0.40);
+  --ruleStroke: rgba(52,243,160,0.75);
+}
 
-  .rule-orand, .rule-andor{
-    --ruleGlow: rgba(120,170,255,0.18);
-    --ruleStroke: rgba(120,170,255,0.32);
-  }
+.rule-orand, .rule-andor{
+  --ruleGlow: rgba(120,170,255,0.40);
+  --ruleStroke: rgba(120,170,255,0.75);
+}
 
-  .rule-andand, .rule-andxor, .rule-xorand{
-    --ruleGlow: rgba(200,120,255,0.18);
-    --ruleStroke: rgba(200,120,255,0.32);
-  }
+.rule-andand, .rule-andxor, .rule-xorand{
+  --ruleGlow: rgba(200,120,255,0.40);
+  --ruleStroke: rgba(200,120,255,0.75);
+}
 
-  .rule-rot2{
-    --ruleGlow: rgba(255,175,90,0.18);
-    --ruleStroke: rgba(255,175,90,0.34);
-  }
+.rule-rot2{
+  --ruleGlow: rgba(255,175,90,0.40);
+  --ruleStroke: rgba(255,175,90,0.80);
+}
 </style>
 </head>
 <body>
@@ -494,39 +494,61 @@ ColRule: ${colRule.name}
 
   // ========= Generator (2x2 rotation) =========
   function generateRelation2x2(){
-    const ruleName = "A→B を 90°回転 / C→? も 90°回転";
 
-    function randCellWithDensity(){
-      let guard = 0;
-      while (guard++ < 200) {
-        const c = randCell();
-        const ones = countOnes(c);
-        if (ones >= 2 && ones <= 5) return c;
-      }
-      return randCell();
+  const TYPES = ["rot","flip","shift"];
+  const type = TYPES[Math.floor(Math.random()*TYPES.length)];
+
+  function randCellWithDensity(){
+    let c, guard = 0;
+    while (guard++ < 200) {
+      c = randCell();
+      const ones = countOnes(c);
+      if (ones >= 2 && ones <= 5) return c;
     }
-
-    const A = randCellWithDensity();
-    const B = rot90(A);
-    const C = randCellWithDensity();
-    const answer = rot90(C);
-
-    const grid = [[A, B],[C, null]];
-    const { options, ansIndex } = buildOptions(answer);
-    const debugText = `Type: relation2x2\nRule: ${ruleName}`;
-
-    return {
-      type:"relation2x2",
-      size:2,
-      grid,
-      answer,
-      options,
-      ansIndex,
-      debugText,
-      rowRuleId: "rot2",
-      colRuleId: "rot2"
-    };
+    return randCell();
   }
+
+  const A = randCellWithDensity();
+  let B, C, answer, ruleName;
+
+  if(type === "rot"){
+    ruleName = "90°回転";
+    B = rot90(A);
+    C = randCellWithDensity();
+    answer = rot90(C);
+  }
+
+  if(type === "flip"){
+    const flipFunc = Math.random() < 0.5 ? flipH : flipV;
+    ruleName = flipFunc === flipH ? "左右反転" : "上下反転";
+    B = flipFunc(A);
+    C = randCellWithDensity();
+    answer = flipFunc(C);
+  }
+
+  if(type === "shift"){
+    const shiftFunc = Math.random() < 0.5 ? shiftRight : shiftDown;
+    ruleName = shiftFunc === shiftRight ? "右シフト" : "下シフト";
+    B = shiftFunc(A);
+    C = randCellWithDensity();
+    answer = shiftFunc(C);
+  }
+
+  const grid = [[A, B],[C, null]];
+  const { options, ansIndex } = buildOptions(answer);
+
+  return {
+    type:"relation2x2",
+    size:2,
+    grid,
+    answer,
+    options,
+    ansIndex,
+    debugText:`2x2 Rule: ${ruleName}`,
+    rowRuleId:"rot2",
+    colRuleId:"rot2"
+  };
+}
 
   // ========= UI =========
   const $matrix = document.getElementById("matrix");
@@ -660,33 +682,35 @@ ColRule: ${colRule.name}
   }
 
   function newQuestion(){
-    state.q = null;
-    state.locked = false;
-    state.revealed = false;
-    setChar(null);
+  state.q = null;
+  state.locked = false;
+  state.revealed = false;
+  setChar(null);
 
-    let q = null;
-    for (let t=0;t<40;t++){
-      const pick = Math.random();
-      q = (pick < 0.7) ? generateQuestion() : generateRelation2x2();
-      const ones = countOnes(q.answer);
-      const uniq = new Set(q.options.map(cellKey)).size;
-      if (ones >= 1 && ones <= 8 && uniq >= 6) break;
-    }
+  let q = null;
 
-    state.q = q;
-    applyRuleColor(q);           // ★ここで色が変わる
-    renderMatrix(q);
-    renderOptions(q);
-    $debug.textContent = q.debugText;
-    setMessage("右下（?）に入る図形を選んでください。");
-    updatePill();
+  for (let t=0;t<30;t++){
+    const pick = Math.random();
+    q = (pick < 0.7) ? generateQuestion() : generateRelation2x2();
+
+    const ones = countOnes(q.answer);
+    const uniq = new Set(q.options.map(cellKey)).size;
+
+    if (ones >= 1 && ones <= 8 && uniq >= 6) break;
   }
 
-  $newBtn.addEventListener("click", newQuestion);
-  $showBtn.addEventListener("click", showAnswer);
+  state.q = q;
+
+  applyRuleColor(q);   // ←ここに移動
+
+  renderMatrix(q);
+  renderOptions(q);
+
+  $debug.textContent = q.debugText;
+  setMessage("右下（?）に入る図形を選んでください。");
+
   updatePill();
-})();
+}
 </script>
 </body>
 </html>
