@@ -70,7 +70,7 @@
       0 10px 30px rgba(0,0,0,0.35),
       0 0 0 1px rgba(52,243,160,0.06) inset;
     backdrop-filter: blur(6px);
-    overflow: hidden; /* ← キャラがはみ出さない */
+    overflow: visible;
   }
 
   /* ===== キャラ表示（ここが今回の本命） ===== */
@@ -85,7 +85,7 @@
     pointer-events: none;
   }
   .charImg{
-    width: clamp(72px, 18vw, 132px); /* ← スマホでも“ちゃんとデカい” */
+    width: clamp(96px, 26vw, 180px); /* ← スマホでも“ちゃんとデカい” */
     height: auto;
     border-radius: 14px;
     background: rgba(255,255,255,0.08);
