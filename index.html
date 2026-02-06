@@ -8,18 +8,12 @@
   :root{
     --bg0:#07090c;
     --bg1:#0b0f14;
-
     --stroke: rgba(255,255,255,0.10);
     --text:#e9eef6;
     --muted: rgba(233,238,246,0.66);
-
     --neon:#34f3a0;
-    --neon2:#18c57d;
     --danger:#ff4d6d;
-
-    --line:#2a2a2a;
   }
-
   *{box-sizing:border-box}
   body{
     margin:0;
@@ -30,25 +24,9 @@
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-
-  .wrap{
-    max-width: 820px;
-    margin: 0 auto;
-    padding: 18px 14px 26px;
-  }
-  .topbar{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom: 12px;
-  }
-  h1{
-    margin:0;
-    font-size: 18px;
-    letter-spacing: .08em;
-    font-weight: 800;
-  }
+  .wrap{ max-width: 820px; margin: 0 auto; padding: 18px 14px 26px; }
+  .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom: 12px; }
+  h1{ margin:0; font-size: 18px; letter-spacing: .08em; font-weight: 800; }
   .pill{
     padding:8px 10px;
     border:1px solid rgba(255,255,255,0.12);
@@ -59,9 +37,7 @@
     white-space:nowrap;
     height: fit-content;
   }
-
   .card{
-    position: relative; /* ← キャラレイヤー用 */
     border: 1px solid var(--stroke);
     background: rgba(255,255,255,0.04);
     border-radius: 16px;
@@ -70,22 +46,18 @@
       0 10px 30px rgba(0,0,0,0.35),
       0 0 0 1px rgba(52,243,160,0.06) inset;
     backdrop-filter: blur(6px);
-    overflow: visible;
   }
 
-  /* ===== キャラ表示（ここが今回の本命） ===== */
-  .charLayer{
-    position:absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 50;
-    display: none; /* JSでONにする */
-    align-items: flex-end;
+  /* ===== キャラ専用エリア（盤面の外：重ならない） ===== */
+  .charSlot{
+    display:none;          /* JSでON */
+    align-items:flex-end;
+    justify-content:flex-end;
     gap: 10px;
-    pointer-events: none;
+    margin-bottom: 10px;   /* 盤面との間隔 */
   }
   .charImg{
-    width: clamp(96px, 26vw, 180px); /* ← スマホでも“ちゃんとデカい” */
+    width: clamp(92px, 24vw, 170px); /* ← ここで “デカさ” 調整 */
     height: auto;
     border-radius: 14px;
     background: rgba(255,255,255,0.08);
@@ -93,7 +65,7 @@
     box-shadow: 0 12px 28px rgba(0,0,0,0.35);
   }
   .bubble{
-    max-width: clamp(140px, 44vw, 260px);
+    max-width: clamp(160px, 46vw, 320px);
     padding: 10px 12px;
     border-radius: 18px;
     background: rgba(0,0,0,0.45);
@@ -123,14 +95,9 @@
   }
   .cell.q{ position:relative; }
   .qmark{
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:900;
-    font-size: 34px;
-    color:#111;
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size: 34px; color:#111;
     letter-spacing:.05em;
   }
 
@@ -182,12 +149,9 @@
   .opt:hover{ border-color: rgba(52,243,160,0.28); }
 
   .badge{
-    width: 26px;
-    height: 26px;
+    width: 26px; height: 26px;
     border-radius: 9px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display:flex; align-items:center; justify-content:center;
     border: 1px solid rgba(52,243,160,0.35);
     color: rgba(52,243,160,0.95);
     background: rgba(0,0,0,0.18);
@@ -195,24 +159,18 @@
     flex: 0 0 auto;
   }
   .thumb{
-    width: 56px;
-    height: 56px;
+    width: 56px; height: 56px;
     border-radius: 12px;
     overflow:hidden;
     border:1px solid rgba(255,255,255,0.14);
     background:#fff;
     flex: 0 0 auto;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display:flex; align-items:center; justify-content:center;
   }
 
   .row{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:space-between;
+    display:flex; gap:10px; flex-wrap:wrap;
+    align-items:center; justify-content:space-between;
     margin-top: 12px;
   }
   .btn{
@@ -224,9 +182,7 @@
     cursor:pointer;
     font-weight: 700;
     letter-spacing:.04em;
-    box-shadow:
-      0 8px 20px rgba(0,0,0,0.35),
-      0 0 0 1px rgba(52,243,160,0.10) inset;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
   }
   .btn.secondary{
     border: 1px solid rgba(255,255,255,0.12);
@@ -241,20 +197,9 @@
     padding: 10px 12px;
     background: rgba(255,255,255,0.03);
   }
-  details > summary{
-    cursor:pointer;
-    font-weight: 800;
-    color: rgba(233,238,246,0.80);
-  }
-  .small{
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.5;
-    margin-top: 8px;
-    white-space: pre-wrap;
-  }
+  details > summary{ cursor:pointer; font-weight: 800; color: rgba(233,238,246,0.80); }
+  .small{ color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 8px; white-space: pre-wrap; }
 
-  /* SVGタイル枠が沈まない */
   .matrix svg rect[stroke="#000"]{ stroke: rgba(255,255,255,0.30) !important; }
 </style>
 </head>
@@ -266,16 +211,14 @@
     </div>
 
     <div class="card">
-      <!-- キャラ表示レイヤー -->
-      <div class="charLayer" id="charLayer">
+      <!-- ★キャラは盤面の外（ここ） -->
+      <div class="charSlot" id="charSlot">
         <img class="charImg" id="charImg" src="" alt="">
         <div class="bubble" id="charBubble">……</div>
       </div>
 
       <div class="matrix" id="matrix"></div>
-
       <div class="msg" id="msg">「次の問題」を押してスタート。</div>
-
       <div class="opts" id="opts"></div>
 
       <div class="row">
@@ -292,7 +235,6 @@
 
 <script>
 (() => {
-  // ========= Utilities =========
   const deepEq = (a,b) => a.length===b.length && a.every((v,i)=>v===b[i]);
   const rndInt = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
   const shuffle = (arr) => {
@@ -306,44 +248,13 @@
   const countOnes = (c) => c.reduce((s,v)=>s+(v?1:0),0);
   const cellKey = (c) => c.join("");
 
-  // ========= Cell ops (3×3 as flat 9 bits) =========
-  function rot90(c){
-    return [
-      c[6],c[3],c[0],
-      c[7],c[4],c[1],
-      c[8],c[5],c[2],
-    ];
-  }
+  function rot90(c){ return [c[6],c[3],c[0], c[7],c[4],c[1], c[8],c[5],c[2]]; }
   function rot180(c){ return rot90(rot90(c)); }
-  function shiftRight(c){
-    return [
-      c[2],c[0],c[1],
-      c[5],c[3],c[4],
-      c[8],c[6],c[7],
-    ];
-  }
-  function shiftDown(c){
-    return [
-      c[6],c[7],c[8],
-      c[0],c[1],c[2],
-      c[3],c[4],c[5],
-    ];
-  }
+  function shiftRight(c){ return [c[2],c[0],c[1], c[5],c[3],c[4], c[8],c[6],c[7]]; }
+  function shiftDown(c){ return [c[6],c[7],c[8], c[0],c[1],c[2], c[3],c[4],c[5]]; }
   function xor(a,b){ return a.map((v,i)=> (v ^ b[i]) ); }
-  function flipH(c){
-    return [
-      c[2],c[1],c[0],
-      c[5],c[4],c[3],
-      c[8],c[7],c[6],
-    ];
-  }
-  function flipV(c){
-    return [
-      c[6],c[7],c[8],
-      c[3],c[4],c[5],
-      c[0],c[1],c[2],
-    ];
-  }
+  function flipH(c){ return [c[2],c[1],c[0], c[5],c[4],c[3], c[8],c[7],c[6]]; }
+  function flipV(c){ return [c[6],c[7],c[8], c[3],c[4],c[5], c[0],c[1],c[2]]; }
   function swap2(c){
     const a = c.slice();
     const i = rndInt(0,8);
@@ -358,7 +269,6 @@
     idx.forEach(i => a[i] = a[i] ? 0 : 1);
     return a;
   }
-
   function randCell(){
     const k = rndInt(2,4);
     const positions = shuffle([...Array(9)].map((_,i)=>i)).slice(0,k);
@@ -368,14 +278,10 @@
   }
 
   const ROW_RULES = [
-    {
-      name: "右 = 左 XOR 中央",
-      buildRow: (L, M) => ({ L, M, R: xor(L, M) })
-    },
+    { name: "右 = 左 XOR 中央", buildRow: (L, M) => ({ L, M, R: xor(L, M) }) },
   ];
 
-  // ========= SVG render =========
-  function cellToSVG(c, size=120){
+  function cellToSVG(c, size=140){
     const s = size/3;
     let rects = "";
     for(let i=0;i<9;i++){
@@ -385,23 +291,13 @@
       }
     }
     const grid =
-    `<path d="
-      M ${s} 0 V ${size}
-      M ${2*s} 0 V ${size}
-      M 0 ${s} H ${size}
-      M 0 ${2*s} H ${size}
-    " stroke="rgba(255,255,255,0.35)" stroke-width="3" />
-    <path d="
-      M ${s} 0 V ${size}
-      M ${2*s} 0 V ${size}
-      M 0 ${s} H ${size}
-      M 0 ${2*s} H ${size}
-    " stroke="rgba(0,0,0,0.18)" stroke-width="1" />`;
-
+    `<path d="M ${s} 0 V ${size} M ${2*s} 0 V ${size} M 0 ${s} H ${size} M 0 ${2*s} H ${size}"
+      stroke="rgba(255,255,255,0.35)" stroke-width="3" />
+     <path d="M ${s} 0 V ${size} M ${2*s} 0 V ${size} M 0 ${s} H ${size} M 0 ${2*s} H ${size}"
+      stroke="rgba(0,0,0,0.18)" stroke-width="1" />`;
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
       <rect width="${size}" height="${size}" fill="#fff" stroke="#000" stroke-width="2"/>
-      ${rects}
-      ${grid}
+      ${rects}${grid}
     </svg>`;
   }
 
@@ -411,7 +307,6 @@
       const k = cellKey(c);
       if (!candidates.some(x => cellKey(x)===k)) candidates.push(c);
     };
-
     add(answer);
     add(rot90(answer));
     add(rot180(answer));
@@ -520,10 +415,7 @@
     ];
 
     const { options, ansIndex } = buildOptions(answer);
-    const debugText =
-`Rule: ${rule.name}
-✅ 行でも列でも成立する問題だけ採用`;
-
+    const debugText = `Rule: ${rule.name}\n✅ 行でも列でも成立する問題だけ採用`;
     return { size:3, grid:gridWithHole, answer, options, ansIndex, debugText };
   }
 
@@ -545,20 +437,12 @@
     const C = randCellWithDensity();
     const answer = rot90(C);
 
-    const grid = [
-      [A, B],
-      [C, null]
-    ];
-
+    const grid = [[A, B],[C, null]];
     const { options, ansIndex } = buildOptions(answer);
-    const debugText =
-`Type: relation2x2
-Rule: ${ruleName}`;
-
+    const debugText = `Type: relation2x2\nRule: ${ruleName}`;
     return { type:"relation2x2", size:2, grid, answer, options, ansIndex, debugText };
   }
 
-  // ========= UI =========
   const $matrix = document.getElementById("matrix");
   const $opts = document.getElementById("opts");
   const $msg = document.getElementById("msg");
@@ -568,18 +452,17 @@ Rule: ${ruleName}`;
   const $showBtn = document.getElementById("showBtn");
 
   // キャラUI
-  const $charLayer = document.getElementById("charLayer");
+  const $charSlot = document.getElementById("charSlot");
   const $charImg = document.getElementById("charImg");
   const $charBubble = document.getElementById("charBubble");
 
-  // ★ 画像パス（ここだけ合わせればOK）
+  // 画像パス
   const IMG = {
     dekabusa: "chara/dekabusa.png",
     chi: "chara/chi.png"
   };
 
   const LABELS = ["A","B","C","D","E","F"];
-
   let state = { q:null, locked:false, revealed:false };
 
   function setMessage(text, kind=""){
@@ -590,21 +473,21 @@ Rule: ${ruleName}`;
 
   function setChar(kind=null, text="……"){
     if (!kind){
-      $charLayer.style.display = "none";
+      $charSlot.style.display = "none";
       return;
     }
     $charImg.src = IMG[kind];
     $charImg.alt = kind;
     $charBubble.textContent = text;
-    $charLayer.style.display = "flex";
+    $charSlot.style.display = "flex";
   }
 
   function renderMatrix(q){
     const n = q.size || 3;
     $matrix.innerHTML = "";
     $matrix.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
-
     const holeIndex = n*n - 1;
+
     for (let i=0;i<n*n;i++){
       const cell = document.createElement("div");
       cell.className = "cell" + (i===holeIndex ? " q" : "");
@@ -616,7 +499,7 @@ Rule: ${ruleName}`;
       } else {
         const r = Math.floor(i/n);
         const c = i % n;
-        cell.innerHTML = cellToSVG(q.grid[r][c], 140); // ←大きめ
+        cell.innerHTML = cellToSVG(q.grid[r][c], 140);
       }
       $matrix.appendChild(cell);
     }
@@ -658,11 +541,9 @@ Rule: ${ruleName}`;
     const correct = (idx === state.q.ansIndex);
     if (correct){
       setMessage(`正解：${LABELS[idx]} ✅`, "ok");
-      // 正解時：チー娘出す例
       setChar("chi", "ギュウ。");
     } else {
       setMessage(`不正解：${LABELS[idx]} ❌（正解はまだ隠しています）`, "ng");
-      // 不正解時：デカブサ出す例
       setChar("dekabusa", "……");
     }
   }
@@ -682,8 +563,6 @@ Rule: ${ruleName}`;
     state.q = null;
     state.locked = false;
     state.revealed = false;
-
-    // 問題開始時はいったん非表示（欲しければここで出してもOK）
     setChar(null);
 
     let q = null;
