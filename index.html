@@ -201,6 +201,40 @@
   .small{ color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 8px; white-space: pre-wrap; }
 
   .matrix svg rect[stroke="#000"]{ stroke: rgba(255,255,255,0.30) !important; }
+  /* ===== ルール色分け（cardの枠色＆発光） ===== */
+.card{
+  --ruleGlow: rgba(52,243,160,0.18); /* デフォ */
+  --ruleStroke: rgba(52,243,160,0.22);
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.35),
+    0 0 0 1px var(--ruleGlow) inset,
+    0 0 26px var(--ruleGlow);
+  border: 1px solid var(--ruleStroke);
+}
+
+/* XOR系 = グリーン */
+.rule-xorxor, .rule-xoror, .rule-orxor{
+  --ruleGlow: rgba(52,243,160,0.18);
+  --ruleStroke: rgba(52,243,160,0.30);
+}
+
+/* OR/AND混在 = ブルー */
+.rule-orand, .rule-andor{
+  --ruleGlow: rgba(120,170,255,0.18);
+  --ruleStroke: rgba(120,170,255,0.32);
+}
+
+/* AND絡み多め = パープル */
+.rule-andand, .rule-andxor, .rule-xorand{
+  --ruleGlow: rgba(200,120,255,0.18);
+  --ruleStroke: rgba(200,120,255,0.32);
+}
+
+/* 2x2 回転 = オレンジ */
+.rule-rot2{
+  --ruleGlow: rgba(255,175,90,0.18);
+  --ruleStroke: rgba(255,175,90,0.34);
+}
 </style>
 </head>
 <body>
@@ -388,7 +422,16 @@ const getRule = (id) => RULES.find(r => r.id === id);
       const ones = countOnes(c);
       if (ones >= 2 && ones <= 4) return c; // ORで増えすぎ防止
     }
-    return randCell();
+    return {
+  size:3,
+  grid:gridWithHole,
+  answer,
+  options,
+  ansIndex,
+  debugText,
+  rowRuleId: rowRule.id,
+  colRuleId: colRule.id
+};
   }
 
   function makeSolvedGrid(){
@@ -472,7 +515,17 @@ ColRule: ${colRule.name}
         const ones = countOnes(c);
         if (ones >= 2 && ones <= 5) return c;
       }
-      return randCell();
+      return {
+  type:"relation2x2",
+  size:2,
+  grid,
+  answer,
+  options,
+  ansIndex,
+  debugText,
+  rowRuleId: "rot2",
+  colRuleId: "rot2"
+};
     }
 
     const A = randCellWithDensity();
@@ -487,6 +540,7 @@ ColRule: ${colRule.name}
   }
 
   const $matrix = document.getElementById("matrix");
+  const $card = document.querySelector(".card");
   const $opts = document.getElementById("opts");
   const $msg = document.getElementById("msg");
   const $debug = document.getElementById("debug");
@@ -591,6 +645,24 @@ ColRule: ${colRule.name}
     }
   }
 
+  function applyRuleColor(q){
+  if (!$card) return;
+
+  // 既存の rule- 系クラスを全部外す
+  $card.classList.forEach(c => { if (c.startsWith("rule-")) $card.classList.remove(c); });
+
+  // 2x2（回転問題）
+  if (q.size === 2){
+    $card.classList.add("rule-rot2");
+    return;
+  }
+
+  // 3x3（行×列ルール）
+  const row = q.rowRuleId || "xor";
+  const col = q.colRuleId || "xor";
+  $card.classList.add(`rule-${row}${col}`);
+}
+
   function showAnswer(){
     if (!state.q) return;
     state.revealed = true;
@@ -604,6 +676,7 @@ ColRule: ${colRule.name}
 
   function newQuestion(){
     state.q = null;
+    applyRuleColor(q);
     state.locked = false;
     state.revealed = false;
     setChar(null);
