@@ -37,18 +37,50 @@
     white-space:nowrap;
     height: fit-content;
   }
+
+  /* ===== ルール色分け（枠濃いめ） ===== */
   .card{
-    border: 1px solid var(--stroke);
+    --ruleGlow: rgba(52,243,160,0.35);
+    --ruleStroke: rgba(52,243,160,0.55);
+
+    border: 2px solid var(--ruleStroke);
     background: rgba(255,255,255,0.04);
     border-radius: 16px;
     padding: 14px;
     box-shadow:
       0 10px 30px rgba(0,0,0,0.35),
-      0 0 0 1px rgba(52,243,160,0.06) inset;
+      0 0 0 2px var(--ruleGlow) inset,
+      0 0 36px var(--ruleGlow);
     backdrop-filter: blur(6px);
   }
 
-  /* ===== キャラ専用エリア（盤面の外：重ならない） ===== */
+  /* 合成（XOR/OR/AND） */
+  .rule-xorxor, .rule-xoror, .rule-orxor{
+    --ruleGlow: rgba(52,243,160,0.40);
+    --ruleStroke: rgba(52,243,160,0.75);
+  }
+  .rule-orand, .rule-andor{
+    --ruleGlow: rgba(120,170,255,0.40);
+    --ruleStroke: rgba(120,170,255,0.75);
+  }
+  .rule-andand, .rule-andxor, .rule-xorand{
+    --ruleGlow: rgba(200,120,255,0.40);
+    --ruleStroke: rgba(200,120,255,0.75);
+  }
+
+  /* 3×3 変形進行（黄色） */
+  .rule-tr{
+    --ruleGlow: rgba(255,215,90,0.42);
+    --ruleStroke: rgba(255,215,90,0.80);
+  }
+
+  /* 2×2（回転/反転/シフト/マスク） */
+  .rule-rot2{
+    --ruleGlow: rgba(255,175,90,0.40);
+    --ruleStroke: rgba(255,175,90,0.84);
+  }
+
+  /* ===== キャラ専用エリア（盤面の外） ===== */
   .charSlot{
     display:none;
     align-items:flex-end;
@@ -201,37 +233,6 @@
   .small{ color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 8px; white-space: pre-wrap; }
 
   .matrix svg rect[stroke="#000"]{ stroke: rgba(255,255,255,0.30) !important; }
-
-  /* ===== ルール色分け（cardの枠色＆発光） ===== */
-  .card{
-  --ruleGlow: rgba(52,243,160,0.35);
-  --ruleStroke: rgba(52,243,160,0.55);
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.35),
-    0 0 0 2px var(--ruleGlow) inset,
-    0 0 36px var(--ruleGlow);
-  border: 2px solid var(--ruleStroke);
-}
-
-  .rule-xorxor, .rule-xoror, .rule-orxor{
-  --ruleGlow: rgba(52,243,160,0.40);
-  --ruleStroke: rgba(52,243,160,0.75);
-}
-
-.rule-orand, .rule-andor{
-  --ruleGlow: rgba(120,170,255,0.40);
-  --ruleStroke: rgba(120,170,255,0.75);
-}
-
-.rule-andand, .rule-andxor, .rule-xorand{
-  --ruleGlow: rgba(200,120,255,0.40);
-  --ruleStroke: rgba(200,120,255,0.75);
-}
-
-.rule-rot2{
-  --ruleGlow: rgba(255,175,90,0.40);
-  --ruleStroke: rgba(255,175,90,0.80);
-}
 </style>
 </head>
 <body>
@@ -241,7 +242,7 @@
       <div class="pill" id="statusPill">出題準備中…</div>
     </div>
 
-    <div class="card">
+    <div class="card" id="card">
       <div class="charSlot" id="charSlot">
         <img class="charImg" id="charImg" src="" alt="">
         <div class="bubble" id="charBubble">……</div>
@@ -265,7 +266,7 @@
 
 <script>
 (() => {
-  // ========= Utils =========
+  // ========= Utilities =========
   const deepEq = (a,b) => a.length===b.length && a.every((v,i)=>v===b[i]);
   const rndInt = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
   const shuffle = (arr) => {
@@ -279,7 +280,7 @@
   const countOnes = (c) => c.reduce((s,v)=>s+(v?1:0),0);
   const cellKey = (c) => c.join("");
 
-  // ========= Cell ops =========
+  // ========= 3×3 cell ops =========
   function rot90(c){ return [c[6],c[3],c[0], c[7],c[4],c[1], c[8],c[5],c[2]]; }
   function rot180(c){ return rot90(rot90(c)); }
   function shiftRight(c){ return [c[2],c[0],c[1], c[5],c[3],c[4], c[8],c[6],c[7]]; }
@@ -311,27 +312,17 @@
     positions.forEach(i => c[i]=1);
     return c;
   }
+  function randCellWithDensity(min=2,max=5){
+    let guard = 0;
+    while (guard++ < 250){
+      const c = randCell();
+      const ones = countOnes(c);
+      if (ones >= min && ones <= max) return c;
+    }
+    return randCell();
+  }
 
-  // ========= Rules =========
-  const RULES = [
-    { id:"xor", name:"右 = 左 XOR 中央", f:(L,M)=>xor(L,M) },
-    { id:"or",  name:"右 = 左 OR 中央",  f:(L,M)=>or(L,M)  },
-    { id:"and", name:"右 = 左 AND 中央", f:(L,M)=>and(L,M) },
-  ];
-
-  const RULESETS = [
-    { row:"xor", col:"xor" },
-    { row:"or",  col:"xor" },
-    { row:"xor", col:"or"  },
-    { row:"and", col:"xor" },
-    { row:"xor", col:"and" },
-    { row:"or",  col:"and" },
-    { row:"and", col:"or"  },
-  ];
-
-  const getRule = (id) => RULES.find(r => r.id === id);
-
-  // ========= Render SVG =========
+  // ========= SVG render =========
   function cellToSVG(c, size=140){
     const s = size/3;
     let rects = "";
@@ -342,24 +333,23 @@
       }
     }
     const grid =
-      `<path d="M ${s} 0 V ${size} M ${2*s} 0 V ${size} M 0 ${s} H ${size} M 0 ${2*s} H ${size}"
-        stroke="rgba(255,255,255,0.35)" stroke-width="3" />
-       <path d="M ${s} 0 V ${size} M ${2*s} 0 V ${size} M 0 ${s} H ${size} M 0 ${2*s} H ${size}"
-        stroke="rgba(0,0,0,0.18)" stroke-width="1" />`;
+    `<path d="M ${s} 0 V ${size} M ${2*s} 0 V ${size} M 0 ${s} H ${size} M 0 ${2*s} H ${size}"
+      stroke="rgba(255,255,255,0.35)" stroke-width="3" />
+     <path d="M ${s} 0 V ${size} M ${2*s} 0 V ${size} M 0 ${s} H ${size} M 0 ${2*s} H ${size}"
+      stroke="rgba(0,0,0,0.18)" stroke-width="1" />`;
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
       <rect width="${size}" height="${size}" fill="#fff" stroke="#000" stroke-width="2"/>
       ${rects}${grid}
     </svg>`;
   }
 
-  // ========= Options =========
+  // ========= options =========
   function buildOptions(answer){
     const candidates = [];
     const add = (c) => {
       const k = cellKey(c);
       if (!candidates.some(x => cellKey(x)===k)) candidates.push(c);
     };
-
     add(answer);
     add(rot90(answer));
     add(rot180(answer));
@@ -395,28 +385,35 @@
     return { options, ansIndex };
   }
 
-  // ========= Generator (3x3 row+col) =========
-  function generateQuestion(){
+  // ========= 3×3 Type1: 合成（row/colを別にして成立させる） =========
+  const RULES = [
+    { id:"xor", name:"XOR", f:(L,M)=>xor(L,M) },
+    { id:"or",  name:"OR",  f:(L,M)=>or(L,M)  },
+    { id:"and", name:"AND", f:(L,M)=>and(L,M) },
+  ];
+  const RULESETS = [
+    { row:"xor", col:"xor" },
+    { row:"or",  col:"xor" },
+    { row:"xor", col:"or"  },
+    { row:"and", col:"xor" },
+    { row:"xor", col:"and" },
+    { row:"or",  col:"and" },
+    { row:"and", col:"or"  },
+    { row:"and", col:"and" },
+  ];
+  const getRule = (id) => RULES.find(r => r.id === id);
+
+  function generateOp3x3(){
     const pickSet = RULESETS[Math.floor(Math.random()*RULESETS.length)];
     const rowRule = getRule(pickSet.row);
     const colRule = getRule(pickSet.col);
 
-    function randCellWithDensity(){
-      let guard = 0;
-      while (guard++ < 300){
-        const c = randCell();
-        const ones = countOnes(c);
-        // ORだと増えやすいので少し薄めに
-        if (ones >= 2 && ones <= 4) return c;
-      }
-      return randCell();
-    }
-
     function makeSolvedGrid(){
-      const a11 = randCellWithDensity();
-      const a12 = randCellWithDensity();
-      const a21 = randCellWithDensity();
-      const a22 = randCellWithDensity();
+      // OR/ANDの増えすぎ防止で少し薄め
+      const a11 = randCellWithDensity(2,4);
+      const a12 = randCellWithDensity(2,4);
+      const a21 = randCellWithDensity(2,4);
+      const a22 = randCellWithDensity(2,4);
 
       const a13 = rowRule.f(a11, a12);
       const a23 = rowRule.f(a21, a22);
@@ -424,7 +421,7 @@
       const a31 = colRule.f(a11, a21);
       const a32 = colRule.f(a12, a22);
 
-      // 右下は「行規則で計算した値」と「列規則で計算した値」が一致する必要がある
+      // 右下は「行でも列でも一致」必須
       const fromRow = rowRule.f(a31, a32);
       const fromCol = colRule.f(a13, a23);
       if (!deepEq(fromRow, fromCol)) return null;
@@ -448,16 +445,16 @@
       const uniq = new Set(all.map(cellKey)).size;
       if (tooExtreme) continue;
       if (uniq < 7) continue;
+
       grid = g;
       break;
     }
-
-    // 保険（最悪xor-xorで必ず作る）
     if (!grid){
-      const a11 = randCellWithDensity();
-      const a12 = randCellWithDensity();
-      const a21 = randCellWithDensity();
-      const a22 = randCellWithDensity();
+      // 最低保障
+      const a11 = randCellWithDensity(2,4);
+      const a12 = randCellWithDensity(2,4);
+      const a21 = randCellWithDensity(2,4);
+      const a22 = randCellWithDensity(2,4);
       const a13 = xor(a11,a12);
       const a23 = xor(a21,a22);
       const a31 = xor(a11,a21);
@@ -474,85 +471,191 @@
     ];
 
     const { options, ansIndex } = buildOptions(answer);
-
     const debugText =
-`RowRule: ${rowRule.name}
-ColRule: ${colRule.name}
+`Type: 3x3 OP
+Row: ${rowRule.name}
+Col: ${colRule.name}
 ✅ 行と列が別でも両方成立する問題だけ採用`;
 
     return {
+      type:"op3x3",
       size:3,
       grid:gridWithHole,
-      answer,
-      options,
-      ansIndex,
+      answer, options, ansIndex,
       debugText,
       rowRuleId: rowRule.id,
       colRuleId: colRule.id
     };
   }
 
-  // ========= Generator (2x2 rotation) =========
-  function generateRelation2x2(){
+  // ========= 3×3 Type2: 変形進行（横と縦で変形が進む） =========
+  const TRANSFORMS = [
+    { id:"rot90",  name:"90°回転", f:rot90 },
+    { id:"rot180", name:"180°回転", f:rot180 },
+    { id:"flipH",  name:"左右反転", f:flipH },
+    { id:"flipV",  name:"上下反転", f:flipV },
+    { id:"shR",    name:"右シフト", f:shiftRight },
+    { id:"shD",    name:"下シフト", f:shiftDown },
+  ];
 
-  const TYPES = ["rot","flip","shift"];
-  const type = TYPES[Math.floor(Math.random()*TYPES.length)];
+  // 「確実に作れる」ペア（可換になりやすい組だけ）
+  const TRANSFORM_PAIRS = [
+    ["shR","shD"], // シフト同士は可換
+    ["shD","shR"],
+    ["flipH","flipV"], // flipH∘flipV = flipV∘flipH = rot180
+    ["flipV","flipH"],
+    ["rot90","rot90"],
+    ["rot180","rot180"],
+    ["flipH","flipH"],
+    ["flipV","flipV"],
+    ["shR","shR"],
+    ["shD","shD"],
+  ];
+  const getT = (id) => TRANSFORMS.find(t => t.id===id);
 
-  function randCellWithDensity(){
-    let c, guard = 0;
-    while (guard++ < 200) {
-      c = randCell();
-      const ones = countOnes(c);
-      if (ones >= 2 && ones <= 5) return c;
+  function applyN(x, f, n){
+    let a = x;
+    for (let i=0;i<n;i++) a = f(a);
+    return a;
+  }
+
+  function generateTransform3x3(){
+    const [rowTId, colTId] = TRANSFORM_PAIRS[Math.floor(Math.random()*TRANSFORM_PAIRS.length)];
+    const rowT = getT(rowTId);
+    const colT = getT(colTId);
+
+    let base = null;
+    let grid = null;
+
+    for (let t=0; t<600; t++){
+      const a11 = randCellWithDensity(2,5);
+      // row→col と col→row の一致チェック（中央がズレたら捨てる）
+      const a12 = applyN(a11, colT.f, 1);
+      const a13 = applyN(a11, colT.f, 2);
+
+      const a21 = applyN(a11, rowT.f, 1);
+      const a31 = applyN(a11, rowT.f, 2);
+
+      const a22_from_row_then_col = applyN(a21, colT.f, 1);
+      const a22_from_col_then_row = applyN(a12, rowT.f, 1);
+      if (!deepEq(a22_from_row_then_col, a22_from_col_then_row)) continue;
+
+      const a22 = a22_from_row_then_col;
+      const a23 = applyN(a22, colT.f, 1);
+      const a32 = applyN(a31, colT.f, 1);
+      const a33_from_row_then_col = applyN(a31, colT.f, 2);
+
+      // 右下も別ルート一致
+      const a33_from_col_then_row = applyN(a13, rowT.f, 2);
+      if (!deepEq(a33_from_row_then_col, a33_from_col_then_row)) continue;
+
+      const a33 = a33_from_row_then_col;
+
+      const all = [a11,a12,a13,a21,a22,a23,a31,a32,a33];
+      const onesList = all.map(countOnes);
+      const tooExtreme = onesList.some(x => x <= 1 || x >= 8);
+      const uniq = new Set(all.map(cellKey)).size;
+      if (tooExtreme) continue;
+      if (uniq < 7) continue;
+
+      base = a11;
+      grid = [
+        [a11,a12,a13],
+        [a21,a22,a23],
+        [a31,a32,a33],
+      ];
+      break;
     }
-    return randCell();
+
+    if (!grid){
+      // 保険でOPへ逃がす
+      return generateOp3x3();
+    }
+
+    const answer = grid[2][2];
+    const gridWithHole = [
+      [grid[0][0], grid[0][1], grid[0][2]],
+      [grid[1][0], grid[1][1], grid[1][2]],
+      [grid[2][0], grid[2][1], null],
+    ];
+
+    const { options, ansIndex } = buildOptions(answer);
+    const debugText =
+`Type: 3x3 TRANSFORM
+Row: ${rowT.name}
+Col: ${colT.name}
+✅ 変形が横と縦で整合する問題だけ採用`;
+
+    return {
+      type:"tr3x3",
+      size:3,
+      grid:gridWithHole,
+      answer, options, ansIndex,
+      debugText,
+      rowRuleId:"tr",
+      colRuleId:"tr",
+      rowTId: rowT.id,
+      colTId: colT.id
+    };
   }
 
-  const A = randCellWithDensity();
-  let B, C, answer, ruleName;
+  // ========= 2×2 relation（回転/反転/シフト/マスクXOR） =========
+  function generateRelation2x2(){
+    const TYPES = ["rot","flip","shift","maskxor"];
+    const type = TYPES[Math.floor(Math.random()*TYPES.length)];
 
-  if(type === "rot"){
-    ruleName = "90°回転";
-    B = rot90(A);
-    C = randCellWithDensity();
-    answer = rot90(C);
+    const A = randCellWithDensity(2,5);
+    let B, C, answer, ruleName;
+
+    if(type === "rot"){
+      ruleName = "90°回転";
+      B = rot90(A);
+      C = randCellWithDensity(2,5);
+      answer = rot90(C);
+    }
+
+    if(type === "flip"){
+      const flipFunc = Math.random() < 0.5 ? flipH : flipV;
+      ruleName = flipFunc === flipH ? "左右反転" : "上下反転";
+      B = flipFunc(A);
+      C = randCellWithDensity(2,5);
+      answer = flipFunc(C);
+    }
+
+    if(type === "shift"){
+      const shiftFunc = Math.random() < 0.5 ? shiftRight : shiftDown;
+      ruleName = shiftFunc === shiftRight ? "右シフト" : "下シフト";
+      B = shiftFunc(A);
+      C = randCellWithDensity(2,5);
+      answer = shiftFunc(C);
+    }
+
+    if(type === "maskxor"){
+      // マスク（固定パターン）で XOR する関係
+      const mask = randCellWithDensity(2,4); // 少し薄いほうが見やすい
+      ruleName = "マスクXOR（同じ型を重ねて反転）";
+      B = xor(A, mask);
+      C = randCellWithDensity(2,5);
+      answer = xor(C, mask);
+    }
+
+    const grid = [[A, B],[C, null]];
+    const { options, ansIndex } = buildOptions(answer);
+
+    return {
+      type:"relation2x2",
+      size:2,
+      grid,
+      answer, options, ansIndex,
+      debugText:`Type: 2x2\nRule: ${ruleName}`,
+      rowRuleId:"rot2",
+      colRuleId:"rot2"
+    };
   }
-
-  if(type === "flip"){
-    const flipFunc = Math.random() < 0.5 ? flipH : flipV;
-    ruleName = flipFunc === flipH ? "左右反転" : "上下反転";
-    B = flipFunc(A);
-    C = randCellWithDensity();
-    answer = flipFunc(C);
-  }
-
-  if(type === "shift"){
-    const shiftFunc = Math.random() < 0.5 ? shiftRight : shiftDown;
-    ruleName = shiftFunc === shiftRight ? "右シフト" : "下シフト";
-    B = shiftFunc(A);
-    C = randCellWithDensity();
-    answer = shiftFunc(C);
-  }
-
-  const grid = [[A, B],[C, null]];
-  const { options, ansIndex } = buildOptions(answer);
-
-  return {
-    type:"relation2x2",
-    size:2,
-    grid,
-    answer,
-    options,
-    ansIndex,
-    debugText:`2x2 Rule: ${ruleName}`,
-    rowRuleId:"rot2",
-    colRuleId:"rot2"
-  };
-}
 
   // ========= UI =========
   const $matrix = document.getElementById("matrix");
-  const $card  = document.querySelector(".card");
+  const $card = document.getElementById("card");
   const $opts = document.getElementById("opts");
   const $msg = document.getElementById("msg");
   const $debug = document.getElementById("debug");
@@ -560,6 +663,7 @@ ColRule: ${colRule.name}
   const $newBtn = document.getElementById("newBtn");
   const $showBtn = document.getElementById("showBtn");
 
+  // キャラUI
   const $charSlot = document.getElementById("charSlot");
   const $charImg = document.getElementById("charImg");
   const $charBubble = document.getElementById("charBubble");
@@ -598,7 +702,6 @@ ColRule: ${colRule.name}
     for (let i=0;i<n*n;i++){
       const cell = document.createElement("div");
       cell.className = "cell" + (i===holeIndex ? " q" : "");
-
       if (i===holeIndex){
         const mark = document.createElement("div");
         mark.className = "qmark";
@@ -641,14 +744,24 @@ ColRule: ${colRule.name}
   }
 
   function applyRuleColor(q){
-    if (!$card || !q) return;
-    // 既存 rule- を削除
+    if (!$card) return;
+
+    // 既存 rule- を除去
     [...$card.classList].forEach(c => { if (c.startsWith("rule-")) $card.classList.remove(c); });
 
+    // 2x2
     if (q.size === 2){
       $card.classList.add("rule-rot2");
       return;
     }
+
+    // 3x3 transform
+    if (q.type === "tr3x3"){
+      $card.classList.add("rule-tr");
+      return;
+    }
+
+    // 3x3 op (row/col)
     const row = q.rowRuleId || "xor";
     const col = q.colRuleId || "xor";
     $card.classList.add(`rule-${row}${col}`);
@@ -681,36 +794,43 @@ ColRule: ${colRule.name}
     last.innerHTML = cellToSVG(state.q.answer, 140);
   }
 
-  function newQuestion(){
-  state.q = null;
-  state.locked = false;
-  state.revealed = false;
-  setChar(null);
-
-  let q = null;
-
-  for (let t=0;t<30;t++){
-    const pick = Math.random();
-    q = (pick < 0.7) ? generateQuestion() : generateRelation2x2();
-
-    const ones = countOnes(q.answer);
-    const uniq = new Set(q.options.map(cellKey)).size;
-
-    if (ones >= 1 && ones <= 8 && uniq >= 6) break;
+  function pickQuestion(){
+    // 出題比率（好きに調整OK）
+    // op3x3: 55% / tr3x3: 25% / 2x2: 20%
+    const r = Math.random();
+    if (r < 0.55) return generateOp3x3();
+    if (r < 0.80) return generateTransform3x3();
+    return generateRelation2x2();
   }
 
-  state.q = q;
+  function newQuestion(){
+    state.q = null;
+    state.locked = false;
+    state.revealed = false;
+    setChar(null);
 
-  applyRuleColor(q);   // ←ここに移動
+    let q = null;
+    for (let t=0;t<40;t++){
+      q = pickQuestion();
+      const ones = countOnes(q.answer);
+      const uniq = new Set(q.options.map(cellKey)).size;
+      if (ones >= 1 && ones <= 8 && uniq >= 6) break;
+    }
 
-  renderMatrix(q);
-  renderOptions(q);
+    state.q = q;
+    applyRuleColor(q);
+    renderMatrix(q);
+    renderOptions(q);
 
-  $debug.textContent = q.debugText;
-  setMessage("右下（?）に入る図形を選んでください。");
+    $debug.textContent = q.debugText;
+    setMessage("右下（?）に入る図形を選んでください。");
+    updatePill();
+  }
 
+  $newBtn.addEventListener("click", newQuestion);
+  $showBtn.addEventListener("click", showAnswer);
   updatePill();
-}
+})();
 </script>
 </body>
 </html>
