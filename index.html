@@ -51,7 +51,7 @@
   }
   .pill{
     padding:8px 10px;
-    border:1px solid var(--stroke);
+    border:1px solid rgba(255,255,255,0.12);
     background: rgba(255,255,255,0.03);
     border-radius: 12px;
     font-size: 12px;
@@ -61,14 +61,47 @@
   }
 
   .card{
-    position:relative; /* ← キャラHUD用 */
-    border:1px solid var(--stroke);
+    position: relative; /* ← キャラレイヤー用 */
+    border: 1px solid var(--stroke);
     background: rgba(255,255,255,0.04);
     border-radius: 16px;
     padding: 14px;
     box-shadow:
       0 10px 30px rgba(0,0,0,0.35),
       0 0 0 1px rgba(52,243,160,0.06) inset;
+    backdrop-filter: blur(6px);
+    overflow: hidden; /* ← キャラがはみ出さない */
+  }
+
+  /* ===== キャラ表示（ここが今回の本命） ===== */
+  .charLayer{
+    position:absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 50;
+    display: none; /* JSでONにする */
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .charImg{
+    width: clamp(72px, 18vw, 132px); /* ← スマホでも“ちゃんとデカい” */
+    height: auto;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+  }
+  .bubble{
+    max-width: clamp(140px, 44vw, 260px);
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(233,238,246,0.92);
+    font-weight: 900;
+    letter-spacing: .04em;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
     backdrop-filter: blur(6px);
   }
 
@@ -78,7 +111,6 @@
     gap: 10px;
     margin-top: 6px;
   }
-
   .cell{
     border:1px solid rgba(255,255,255,0.10);
     background: #fff;
@@ -89,11 +121,7 @@
     align-items:center;
     justify-content:center;
   }
-
-  .cell.q{
-    background: #fff;
-    position:relative;
-  }
+  .cell.q{ position:relative; }
   .qmark{
     position:absolute;
     inset:0;
@@ -110,7 +138,7 @@
     margin-top: 12px;
     padding: 10px 12px;
     border-radius: 12px;
-    border:1px solid rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.12);
     background: rgba(255,255,255,0.03);
     color: var(--muted);
     font-size: 13px;
@@ -135,12 +163,11 @@
     gap:10px;
     width:100%;
     max-width:360px;
-    margin:12px auto 0;
+    margin:0 auto;
   }
   .opt{
     border: 1px solid rgba(255,255,255,0.10);
     background: rgba(255,255,255,0.04);
-    box-shadow: 0 8px 18px rgba(0,0,0,0.28);
     border-radius: 14px;
     padding: 8px;
     cursor:pointer;
@@ -150,13 +177,10 @@
     align-items:center;
     justify-content:flex-start;
     min-height: 72px;
-    width:100px;
-  }
-  .opt:hover{
-    border-color: rgba(52,243,160,0.28);
-    background: rgba(255,255,255,0.06);
   }
   .opt:active{ transform: translateY(1px); }
+  .opt:hover{ border-color: rgba(52,243,160,0.28); }
+
   .badge{
     width: 26px;
     height: 26px;
@@ -164,19 +188,18 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    border:1px solid rgba(52,243,160,0.35);
+    border: 1px solid rgba(52,243,160,0.35);
     color: rgba(52,243,160,0.95);
     background: rgba(0,0,0,0.18);
     font-weight: 900;
     flex: 0 0 auto;
-    box-shadow: 0 0 18px rgba(52,243,160,0.10);
   }
   .thumb{
     width: 56px;
     height: 56px;
     border-radius: 12px;
     overflow:hidden;
-    border:1px solid rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.14);
     background:#fff;
     flex: 0 0 auto;
     display:flex;
@@ -192,7 +215,6 @@
     justify-content:space-between;
     margin-top: 12px;
   }
-
   .btn{
     border: 1px solid rgba(52,243,160,0.22);
     background: linear-gradient(180deg, rgba(52,243,160,0.18), rgba(52,243,160,0.06));
@@ -206,7 +228,6 @@
       0 8px 20px rgba(0,0,0,0.35),
       0 0 0 1px rgba(52,243,160,0.10) inset;
   }
-  .btn:active{ transform: translateY(1px); }
   .btn.secondary{
     border: 1px solid rgba(255,255,255,0.12);
     background: rgba(255,255,255,0.06);
@@ -233,53 +254,22 @@
     white-space: pre-wrap;
   }
 
-  /* ===== C案：余地ゼロでキャラを重ねるHUD ===== */
-  .charaHud{
-    position:absolute;
-    right:12px;
-    top:12px;
-    display:flex;
-    align-items:flex-end;
-    gap:10px;
-    pointer-events:none;
-    z-index:5;
-  }
-  .charaImg{
-    width:64px;
-    height:64px;
-    object-fit:contain;
-    filter: drop-shadow(0 8px 18px rgba(0,0,0,.45));
-    opacity:.95;
-  }
-  .charaBubble{
-    max-width: 220px;
-    padding:8px 10px;
-    border-radius:12px;
-    border:1px solid rgba(255,255,255,0.14);
-    background: rgba(0,0,0,0.35);
-    color: rgba(233,238,246,0.92);
-    font-size:12px;
-    line-height:1.35;
-    backdrop-filter: blur(6px);
-  }
+  /* SVGタイル枠が沈まない */
+  .matrix svg rect[stroke="#000"]{ stroke: rgba(255,255,255,0.30) !important; }
 </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="topbar">
-      <div>
-        <h1>ガチIQ（MVP）</h1>
-      </div>
+      <div><h1>ガチIQ（MVP）</h1></div>
       <div class="pill" id="statusPill">出題準備中…</div>
     </div>
 
     <div class="card">
-
-      <!-- C：キャラHUD（余地不要で重ねる） -->
-      <div class="charaHud" id="charaHud" style="display:none" aria-hidden="true">
-        <img class="charaImg" id="charaImg" src="chara/chi.png" alt="">
-        <div class="charaBubble" id="charaBubble">…</div>
+      <!-- キャラ表示レイヤー -->
+      <div class="charLayer" id="charLayer">
+        <img class="charImg" id="charImg" src="" alt="">
+        <div class="bubble" id="charBubble">……</div>
       </div>
 
       <div class="matrix" id="matrix"></div>
@@ -325,7 +315,6 @@
     ];
   }
   function rot180(c){ return rot90(rot90(c)); }
-
   function shiftRight(c){
     return [
       c[2],c[0],c[1],
@@ -340,9 +329,7 @@
       c[3],c[4],c[5],
     ];
   }
-
   function xor(a,b){ return a.map((v,i)=> (v ^ b[i]) ); }
-
   function flipH(c){
     return [
       c[2],c[1],c[0],
@@ -357,7 +344,6 @@
       c[0],c[1],c[2],
     ];
   }
-
   function swap2(c){
     const a = c.slice();
     const i = rndInt(0,8);
@@ -373,7 +359,6 @@
     return a;
   }
 
-  // ========= Random base cell generation =========
   function randCell(){
     const k = rndInt(2,4);
     const positions = shuffle([...Array(9)].map((_,i)=>i)).slice(0,k);
@@ -382,66 +367,44 @@
     return c;
   }
 
-  // ========= Rule templates =========
   const ROW_RULES = [
     {
       name: "右 = 左 XOR 中央",
-      buildRow: (L, M) => {
-        const R = xor(L, M);
-        return { L, M, R };
-      }
+      buildRow: (L, M) => ({ L, M, R: xor(L, M) })
     },
   ];
 
-  // ========= SVG render（黒マスの見た目だけ 4種：solid/hatch/gray/mix） =========
-  function cellToSVG(c, size=96, blackMode="solid"){
+  // ========= SVG render =========
+  function cellToSVG(c, size=120){
     const s = size/3;
-
-    const defs = `
-      <defs>
-        <pattern id="hatch" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="10" stroke="#000" stroke-width="3" />
-        </pattern>
-      </defs>
-    `;
-
-    const fillFor = (i) => {
-      if (blackMode === "solid") return "#000";
-      if (blackMode === "gray")  return "#666";
-      if (blackMode === "hatch") return "url(#hatch)";
-      if (blackMode === "mix"){
-        const m = i % 3;
-        return (m===0) ? "#000" : (m===1) ? "url(#hatch)" : "#666";
-      }
-      return "#000";
-    };
-
     let rects = "";
     for(let i=0;i<9;i++){
       if(c[i]){
         const x = (i%3)*s, y = Math.floor(i/3)*s;
-        rects += `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="${fillFor(i)}"/>`;
+        rects += `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="#000"/>`;
       }
     }
-
-    const grid = `
-      <path d="
-        M ${s} 0 V ${size}
-        M ${2*s} 0 V ${size}
-        M 0 ${s} H ${size}
-        M 0 ${2*s} H ${size}
-      " stroke="rgba(0,0,0,0.18)" stroke-width="2" />
-    `;
+    const grid =
+    `<path d="
+      M ${s} 0 V ${size}
+      M ${2*s} 0 V ${size}
+      M 0 ${s} H ${size}
+      M 0 ${2*s} H ${size}
+    " stroke="rgba(255,255,255,0.35)" stroke-width="3" />
+    <path d="
+      M ${s} 0 V ${size}
+      M ${2*s} 0 V ${size}
+      M 0 ${s} H ${size}
+      M 0 ${2*s} H ${size}
+    " stroke="rgba(0,0,0,0.18)" stroke-width="1" />`;
 
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
-      ${defs}
-      <rect width="${size}" height="${size}" fill="#fff" stroke="rgba(0,0,0,0.35)" stroke-width="2"/>
+      <rect width="${size}" height="${size}" fill="#fff" stroke="#000" stroke-width="2"/>
       ${rects}
       ${grid}
     </svg>`;
   }
 
-  // ========= Build options (6 choices) =========
   function buildOptions(answer){
     const candidates = [];
     const add = (c) => {
@@ -492,7 +455,6 @@
     }
     return true;
   }
-
   function isColRuleSatisfied(grid, rule) {
     for (let c = 0; c < 3; c++) {
       const L = grid[0][c], M = grid[1][c], R = grid[2][c];
@@ -502,7 +464,6 @@
     return true;
   }
 
-  // ========= Generate 3×3 XOR (row+col satisfied) =========
   function generateQuestion(){
     const rule = ROW_RULES[0];
 
@@ -543,14 +504,11 @@
       const onesList = all.map(countOnes);
       const tooExtreme = onesList.some(x => x <= 1 || x >= 8);
       const uniq = new Set(all.map(cellKey)).size;
-
       if (tooExtreme) continue;
       if (uniq < 7) continue;
       if (!isRowRuleSatisfied(g, rule)) continue;
       if (!isColRuleSatisfied(g, rule)) continue;
-
-      grid = g;
-      break;
+      grid = g; break;
     }
     if (!grid) grid = makeSolvedGrid();
 
@@ -562,30 +520,13 @@
     ];
 
     const { options, ansIndex } = buildOptions(answer);
-
-    const blackMode =
-      (Math.random()<0.55) ? "solid" :
-      (Math.random()<0.70) ? "hatch" :
-      (Math.random()<0.85) ? "gray"  : "mix";
-
     const debugText =
-`Type: 3x3
-Rule: ${rule.name}
-Mode: ${blackMode}
-`;
+`Rule: ${rule.name}
+✅ 行でも列でも成立する問題だけ採用`;
 
-    return {
-      size: 3,
-      blackMode,
-      grid: gridWithHole,
-      answer,
-      options,
-      ansIndex,
-      debugText
-    };
+    return { size:3, grid:gridWithHole, answer, options, ansIndex, debugText };
   }
 
-  // ========= Generate 2×2 relation (rotate 90) =========
   function generateRelation2x2(){
     const ruleName = "A→B を 90°回転 / C→? も 90°回転";
 
@@ -601,7 +542,6 @@ Mode: ${blackMode}
 
     const A = randCellWithDensity();
     const B = rot90(A);
-
     const C = randCellWithDensity();
     const answer = rot90(C);
 
@@ -611,28 +551,11 @@ Mode: ${blackMode}
     ];
 
     const { options, ansIndex } = buildOptions(answer);
-
-    const blackMode =
-      (Math.random()<0.55) ? "solid" :
-      (Math.random()<0.70) ? "hatch" :
-      (Math.random()<0.85) ? "gray"  : "mix";
-
     const debugText =
-`Type: 2x2
-Rule: ${ruleName}
-Mode: ${blackMode}
-`;
+`Type: relation2x2
+Rule: ${ruleName}`;
 
-    return {
-      type: "relation2x2",
-      size: 2,
-      blackMode,
-      grid,
-      answer,
-      options,
-      ansIndex,
-      debugText
-    };
+    return { type:"relation2x2", size:2, grid, answer, options, ansIndex, debugText };
   }
 
   // ========= UI =========
@@ -644,18 +567,20 @@ Mode: ${blackMode}
   const $newBtn = document.getElementById("newBtn");
   const $showBtn = document.getElementById("showBtn");
 
-  // キャラHUD（C案）
-  const $charaHud = document.getElementById("charaHud");
-  const $charaImg = document.getElementById("charaImg");
-  const $charaBubble = document.getElementById("charaBubble");
+  // キャラUI
+  const $charLayer = document.getElementById("charLayer");
+  const $charImg = document.getElementById("charImg");
+  const $charBubble = document.getElementById("charBubble");
+
+  // ★ 画像パス（ここだけ合わせればOK）
+  const IMG = {
+    dekabusa: "assets/img/dekabusa.png",
+    chi: "assets/img/chi.png"
+  };
 
   const LABELS = ["A","B","C","D","E","F"];
 
-  let state = {
-    q: null,
-    locked: false,
-    revealed: false,
-  };
+  let state = { q:null, locked:false, revealed:false };
 
   function setMessage(text, kind=""){
     $msg.classList.remove("ok","ng");
@@ -663,14 +588,15 @@ Mode: ${blackMode}
     $msg.textContent = text;
   }
 
-  function hideChara(){
-    if ($charaHud) $charaHud.style.display = "none";
-  }
-  function sayChara(text, img){
-    if (!$charaHud) return;
-    $charaImg.src = img || "chara/chi.png";
-    $charaBubble.textContent = text;
-    $charaHud.style.display = "flex";
+  function setChar(kind=null, text="……"){
+    if (!kind){
+      $charLayer.style.display = "none";
+      return;
+    }
+    $charImg.src = IMG[kind];
+    $charImg.alt = kind;
+    $charBubble.textContent = text;
+    $charLayer.style.display = "flex";
   }
 
   function renderMatrix(q){
@@ -679,11 +605,9 @@ Mode: ${blackMode}
     $matrix.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
 
     const holeIndex = n*n - 1;
-
     for (let i=0;i<n*n;i++){
       const cell = document.createElement("div");
       cell.className = "cell" + (i===holeIndex ? " q" : "");
-
       if (i===holeIndex){
         const mark = document.createElement("div");
         mark.className = "qmark";
@@ -692,7 +616,7 @@ Mode: ${blackMode}
       } else {
         const r = Math.floor(i/n);
         const c = i % n;
-        cell.innerHTML = cellToSVG(q.grid[r][c], 120, q.blackMode || "solid");
+        cell.innerHTML = cellToSVG(q.grid[r][c], 140); // ←大きめ
       }
       $matrix.appendChild(cell);
     }
@@ -712,7 +636,7 @@ Mode: ${blackMode}
 
       const thumb = document.createElement("div");
       thumb.className = "thumb";
-      thumb.innerHTML = cellToSVG(optCell, 64, q.blackMode || "solid");
+      thumb.innerHTML = cellToSVG(optCell, 64);
 
       btn.appendChild(badge);
       btn.appendChild(thumb);
@@ -721,10 +645,7 @@ Mode: ${blackMode}
   }
 
   function updatePill(){
-    if (!state.q){
-      $pill.textContent = "未開始";
-      return;
-    }
+    if (!state.q){ $pill.textContent = "未開始"; return; }
     $pill.textContent = state.locked ? "回答済み" : "回答待ち";
   }
 
@@ -737,12 +658,12 @@ Mode: ${blackMode}
     const correct = (idx === state.q.ansIndex);
     if (correct){
       setMessage(`正解：${LABELS[idx]} ✅`, "ok");
-      // C案：正解時
-      sayChara("ギュウ。", "chara/chi.png");
+      // 正解時：チー娘出す例
+      setChar("chi", "ギュウ。");
     } else {
       setMessage(`不正解：${LABELS[idx]} ❌（正解はまだ隠しています）`, "ng");
-      // C案：不正解時（デカブサ想定）
-      sayChara("……", "chara/dekabusa.png");
+      // 不正解時：デカブサ出す例
+      setChar("dekabusa", "……");
     }
   }
 
@@ -750,11 +671,11 @@ Mode: ${blackMode}
     if (!state.q) return;
     state.revealed = true;
     const ansLabel = LABELS[state.q.ansIndex];
-    setMessage(`正解：${ansLabel} ✅`, "ok");
+    setMessage(`正解は ${ansLabel} です。`, "ok");
 
     const qCells = Array.from($matrix.querySelectorAll(".cell"));
     const last = qCells[qCells.length - 1];
-    last.innerHTML = cellToSVG(state.q.answer, 120, state.q.blackMode || "solid");
+    last.innerHTML = cellToSVG(state.q.answer, 140);
   }
 
   function newQuestion(){
@@ -762,16 +683,16 @@ Mode: ${blackMode}
     state.locked = false;
     state.revealed = false;
 
+    // 問題開始時はいったん非表示（欲しければここで出してもOK）
+    setChar(null);
+
     let q = null;
     for (let t=0;t<30;t++){
       const pick = Math.random();
       q = (pick < 0.7) ? generateQuestion() : generateRelation2x2();
-
       const ones = countOnes(q.answer);
       const uniq = new Set(q.options.map(cellKey)).size;
-      if (ones >= 1 && ones <= 8 && uniq >= 6){
-        break;
-      }
+      if (ones >= 1 && ones <= 8 && uniq >= 6) break;
     }
 
     state.q = q;
@@ -779,15 +700,11 @@ Mode: ${blackMode}
     renderOptions(q);
     $debug.textContent = q.debugText;
     setMessage("右下（?）に入る図形を選んでください。");
-    hideChara();
     updatePill();
   }
 
-  // ========= Bind =========
   $newBtn.addEventListener("click", newQuestion);
   $showBtn.addEventListener("click", showAnswer);
-
-  // Start
   updatePill();
 })();
 </script>
