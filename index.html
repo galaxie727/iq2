@@ -253,6 +253,8 @@
   function shiftRight(c){ return [c[2],c[0],c[1], c[5],c[3],c[4], c[8],c[6],c[7]]; }
   function shiftDown(c){ return [c[6],c[7],c[8], c[0],c[1],c[2], c[3],c[4],c[5]]; }
   function xor(a,b){ return a.map((v,i)=> (v ^ b[i]) ); }
+  function or(a,b){  return a.map((v,i)=> (v | b[i]) ); }
+  function and(a,b){ return a.map((v,i)=> (v & b[i]) ); }
   function flipH(c){ return [c[2],c[1],c[0], c[5],c[4],c[3], c[8],c[7],c[6]]; }
   function flipV(c){ return [c[6],c[7],c[8], c[3],c[4],c[5], c[0],c[1],c[2]]; }
   function swap2(c){
@@ -277,12 +279,24 @@
     return c;
   }
 
-  const ROW_RULES = [
-  { name: "右 = 左 XOR 中央", buildRow: (L, M) => ({ L, M, R: xor(L, M) }) },
-  { name: "右 = 中央 XOR 左", buildRow: (L, M) => ({ L, M, R: xor(M, L) }) }, // 見た目は同じだが生成の偏りが変わる
-  { name: "右 = 左 OR 中央",  buildRow: (L, M) => ({ L, M, R: or(L, M)  }) },
-  { name: "右 = 左 AND 中央", buildRow: (L, M) => ({ L, M, R: and(L, M) }) },
-  ];
+  const RULES = [
+  { id:"xor", name:"右 = 左 XOR 中央", f:(L,M)=>xor(L,M) },
+  { id:"or",  name:"右 = 左 OR 中央",  f:(L,M)=>or(L,M)  },
+  { id:"and", name:"右 = 左 AND 中央", f:(L,M)=>and(L,M) },
+];
+
+// 行と列を別に選ぶ（ここ増やすだけで種類増える）
+const RULESETS = [
+  { row:"xor", col:"xor" },
+  { row:"or",  col:"xor" },
+  { row:"xor", col:"or"  },
+  { row:"and", col:"xor" },
+  { row:"xor", col:"and" },
+  { row:"or",  col:"and" },
+  { row:"and", col:"or"  },
+];
+
+const getRule = (id) => RULES.find(r => r.id === id);
 
   function cellToSVG(c, size=140){
     const s = size/3;
@@ -363,65 +377,91 @@
   }
 
   function generateQuestion(){
-    const rule = ROW_RULES[Math.floor(Math.random()*ROW_RULES.length)];
+  const pickSet = RULESETS[Math.floor(Math.random()*RULESETS.length)];
+  const rowRule = getRule(pickSet.row);
+  const colRule = getRule(pickSet.col);
 
-    function randCellWithDensity(){
-      let c, guard = 0;
-      while (guard++ < 200) {
-        c = randCell();
-        const ones = countOnes(c);
-        if (ones >= 3 && ones <= 5) return c;
-      }
-      return randCell();
+  function randCellWithDensity(){
+    let c, guard = 0;
+    while (guard++ < 200) {
+      c = randCell();
+      const ones = countOnes(c);
+      if (ones >= 2 && ones <= 4) return c; // ORで増えすぎ防止
     }
-
-    function makeSolvedGrid(){
-      const a11 = randCellWithDensity();
-      const a21 = randCellWithDensity();
-      const a31 = xor(a11, a21);
-
-      const a12 = randCellWithDensity();
-      const a22 = randCellWithDensity();
-      const a32 = xor(a12, a22);
-
-      const a13 = xor(a11, a12);
-      const a23 = xor(a21, a22);
-      const a33 = xor(a31, a32);
-
-      return [
-        [a11, a12, a13],
-        [a21, a22, a23],
-        [a31, a32, a33],
-      ];
-    }
-
-    let grid = null;
-    for (let t=0; t<300; t++){
-      const g = makeSolvedGrid();
-      const all = g.flat();
-      const onesList = all.map(countOnes);
-      const tooExtreme = onesList.some(x => x <= 1 || x >= 8);
-      const uniq = new Set(all.map(cellKey)).size;
-      if (tooExtreme) continue;
-      if (uniq < 7) continue;
-      if (!isRowRuleSatisfied(g, rule)) continue;
-      if (!isColRuleSatisfied(g, rule)) continue;
-      grid = g; break;
-    }
-    if (!grid) grid = makeSolvedGrid();
-
-    const answer = grid[2][2];
-    const gridWithHole = [
-      [grid[0][0], grid[0][1], grid[0][2]],
-      [grid[1][0], grid[1][1], grid[1][2]],
-      [grid[2][0], grid[2][1], null],
-    ];
-
-    const { options, ansIndex } = buildOptions(answer);
-    const debugText = `Rule: ${rule.name}\n✅ 行でも列でも成立する問題だけ採用`;
-    return { size:3, grid:gridWithHole, answer, options, ansIndex, debugText };
+    return randCell();
   }
 
+  function makeSolvedGrid(){
+    const a11 = randCellWithDensity();
+    const a12 = randCellWithDensity();
+    const a21 = randCellWithDensity();
+    const a22 = randCellWithDensity();
+
+    const a13 = rowRule.f(a11, a12);
+    const a23 = rowRule.f(a21, a22);
+
+    const a31 = colRule.f(a11, a21);
+    const a32 = colRule.f(a12, a22);
+
+    const fromRow = rowRule.f(a31, a32);
+    const fromCol = colRule.f(a13, a23);
+
+    if (!deepEq(fromRow, fromCol)) return null; // ここが肝
+    const a33 = fromRow;
+
+    return [
+      [a11, a12, a13],
+      [a21, a22, a23],
+      [a31, a32, a33],
+    ];
+  }
+
+  let grid = null;
+  for (let t=0; t<800; t++){
+    const g = makeSolvedGrid();
+    if (!g) continue;
+
+    const all = g.flat();
+    const onesList = all.map(countOnes);
+    const tooExtreme = onesList.some(x => x <= 1 || x >= 8);
+    const uniq = new Set(all.map(cellKey)).size;
+
+    if (tooExtreme) continue;
+    if (uniq < 7) continue;
+    grid = g;
+    break;
+  }
+  if (!grid){
+    // 保険：xor-xor
+    const a11 = randCellWithDensity();
+    const a12 = randCellWithDensity();
+    const a21 = randCellWithDensity();
+    const a22 = randCellWithDensity();
+    const a13 = xor(a11,a12);
+    const a23 = xor(a21,a22);
+    const a31 = xor(a11,a21);
+    const a32 = xor(a12,a22);
+    const a33 = xor(a31,a32);
+    grid = [[a11,a12,a13],[a21,a22,a23],[a31,a32,a33]];
+  }
+
+  const answer = grid[2][2];
+  const gridWithHole = [
+    [grid[0][0], grid[0][1], grid[0][2]],
+    [grid[1][0], grid[1][1], grid[1][2]],
+    [grid[2][0], grid[2][1], null],
+  ];
+
+  const { options, ansIndex } = buildOptions(answer);
+
+  const debugText =
+`RowRule: ${rowRule.name}
+ColRule: ${colRule.name}
+✅ 行と列が別でも両方成立する問題だけ採用`;
+
+  return { size:3, grid:gridWithHole, answer, options, ansIndex, debugText };
+}
+  
   function generateRelation2x2(){
     const ruleName = "A→B を 90°回転 / C→? も 90°回転";
 
