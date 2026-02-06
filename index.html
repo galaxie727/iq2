@@ -278,7 +278,10 @@
   }
 
   const ROW_RULES = [
-    { name: "右 = 左 XOR 中央", buildRow: (L, M) => ({ L, M, R: xor(L, M) }) },
+  { name: "右 = 左 XOR 中央", buildRow: (L, M) => ({ L, M, R: xor(L, M) }) },
+  { name: "右 = 中央 XOR 左", buildRow: (L, M) => ({ L, M, R: xor(M, L) }) }, // 見た目は同じだが生成の偏りが変わる
+  { name: "右 = 左 OR 中央",  buildRow: (L, M) => ({ L, M, R: or(L, M)  }) },
+  { name: "右 = 左 AND 中央", buildRow: (L, M) => ({ L, M, R: and(L, M) }) },
   ];
 
   function cellToSVG(c, size=140){
@@ -360,14 +363,14 @@
   }
 
   function generateQuestion(){
-    const rule = ROW_RULES[0];
+    const rule = ROW_RULES[Math.floor(Math.random()*ROW_RULES.length)];
 
     function randCellWithDensity(){
       let c, guard = 0;
       while (guard++ < 200) {
         c = randCell();
         const ones = countOnes(c);
-        if (ones >= 2 && ones <= 5) return c;
+        if (ones >= 3 && ones <= 5) return c;
       }
       return randCell();
     }
