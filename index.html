@@ -965,11 +965,8 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
     renderOptions(q);
     $debug.textContent = q.debugText;
 
-    if (q.type === "triomino4x4"){
-      setMessage(q.promptText || "選択肢から正解を選んでください。");
-    } else {
-      setMessage("右下（?）に入る図形を選んでください。");
-    }
+    // ここを統一
+setMessage("？の部分に入る図形を選んでください。");
 
     updatePill();
   }
