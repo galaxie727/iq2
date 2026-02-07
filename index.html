@@ -85,42 +85,46 @@
     --ruleStroke: rgba(255,225,90,0.54);
   }
 
-  /* ===== キャラ専用エリア（盤面の外） ===== */
+  /* ===== キャラ表示：A案（横長・右寄り画像 + 左に吹き出し） ===== */
   .charSlot{
-  display:none;
-  position: relative;
-  width: 100%;
-  min-height: 150px;          /* 上の空間を確保（必要なら増減） */
-  margin-bottom: 10px;
-  min-height: 210px;
+    display:none;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .bubble{
+    width: clamp(140px, 28vw, 240px);
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.20);
+    color: rgba(233,238,246,0.92);
+    font-weight: 900;
+    letter-spacing: .04em;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+    backdrop-filter: blur(6px);
+    flex: 0 0 auto;
+    text-align:left;
   }
   .charImg{
-  width: clamp(120px, 34vw, 260px);  /* ←少し横も拡張 */
-  max-height: 200px;                 /* ←ここ追加 */
-  height: auto;
-  object-fit: contain;               /* ←超重要 */
-  border-radius: 14px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid var(--stroke-strong);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
-}
-  .bubble{
-  position: absolute;
-  left: 0;
-  top: 0;
+    width: clamp(220px, 62vw, 540px);
+    height: clamp(132px, 22vw, 210px);
+    object-fit: cover; /* JSでデカブサだけ contain に切替 */
+    border-radius: 16px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--stroke-strong);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    flex: 1 1 auto;
+    display:block;
+  }
 
-  max-width: clamp(160px, 40vw, 320px);
-  padding: 10px 12px;
-  border-radius: 18px;
-  background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.20);
-  color: rgba(233,238,246,0.92);
-  font-weight: 900;
-  letter-spacing: .04em;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-  backdrop-filter: blur(6px);
-  max-width: clamp(140px, 34vw, 260px);
-}
+  /* 狭いときは縦積み（吹き出し→画像） */
+  @media (max-width: 420px){
+    .charSlot{ flex-direction:column; }
+    .bubble{ width: 100%; }
+    .charImg{ width: 100%; }
+  }
 
   .matrix{
     display:grid;
@@ -257,9 +261,10 @@
     </div>
 
     <div class="card" id="card">
+      <!-- A案：左に吹き出し、右に横長画像 -->
       <div class="charSlot" id="charSlot">
-        <img class="charImg" id="charImg" src="" alt="">
         <div class="bubble" id="charBubble">……</div>
+        <img class="charImg" id="charImg" src="" alt="">
       </div>
 
       <div class="matrix" id="matrix"></div>
@@ -418,73 +423,45 @@
     "ring",
   ];
 
-  function symbolSVG(sym, size=44, mode="opt"){
-  const s = size;
-  const cx = s/2, cy = s/2;
-  const stroke = "#111";
+  function symbolSVG(sym, size=44){
+    const s = size;
+    const cx = s/2, cy = s/2;
+    const stroke = "#111";
+    const sw = 3.2;
 
-  // ★ モード別（盤面は強めにして大小を分かりやすく）
-  const cfg = (mode==="board")
-    ? {
-        sw: 4.6,          // 線を太く
-        rCircle: 0.17,    // 小◯を小さく
-        rRing:   0.32,    // 大◯を大きく
-        rDot:    0.105,   // 点も少し大きめ
-        rBullDot:0.11,
-        rCross:  0.32,
-        diamond: {a:0.20, b:0.80}, // ひし形も少し大きめに
-      }
-    : {
-        sw: 3.2,          // 既存
-        rCircle: 0.22,
-        rRing:   0.26,
-        rDot:    0.10,
-        rBullDot:0.10,
-        rCross:  0.26,
-        diamond: {a:0.22, b:0.78},
-      };
+    const bg = `<rect width="${s}" height="${s}" rx="${Math.max(8, s*0.18)}" ry="${Math.max(8, s*0.18)}" fill="#fff"/>`;
 
-  const sw = cfg.sw;
+    const circle = `<circle cx="${cx}" cy="${cy}" r="${s*0.22}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const square = `<rect x="${s*0.30}" y="${s*0.30}" width="${s*0.40}" height="${s*0.40}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const tri = `<path d="M ${cx} ${s*0.24} L ${s*0.74} ${s*0.72} L ${s*0.26} ${s*0.72} Z" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const dot = `<circle cx="${cx}" cy="${cy}" r="${s*0.10}" fill="${stroke}" />`;
+    const ring = `<circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const bull = `
+      <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
+      <circle cx="${cx}" cy="${cy}" r="${s*0.10}" fill="${stroke}" />
+    `;
+    const circle_cross = `
+      <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
+      <path d="M ${cx} ${s*0.22} V ${s*0.78} M ${s*0.22} ${cy} H ${s*0.78}"
+        stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
+    `;
+    const diamond = `<path d="M ${cx} ${s*0.22} L ${s*0.78} ${cy} L ${cx} ${s*0.78} L ${s*0.22} ${cy} Z"
+        fill="none" stroke="${stroke}" stroke-width="${sw}"/>`;
 
-  const bg = `<rect width="${s}" height="${s}" rx="${Math.max(8, s*0.18)}" ry="${Math.max(8, s*0.18)}" fill="#fff"/>`;
+    let shape = circle;
+    if (sym==="square") shape = square;
+    if (sym==="triangle") shape = tri;
+    if (sym==="dot") shape = dot;
+    if (sym==="ring") shape = ring;
+    if (sym==="bullseye") shape = bull;
+    if (sym==="circle_cross") shape = circle_cross;
+    if (sym==="diamond") shape = diamond;
 
-  // ▼ここで circle と ring の差を強化
-  const circle = `<circle cx="${cx}" cy="${cy}" r="${s*cfg.rCircle}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />`;
-  const ring   = `<circle cx="${cx}" cy="${cy}" r="${s*cfg.rRing}"   fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />`;
-
-  const square = `<rect x="${s*0.30}" y="${s*0.30}" width="${s*0.40}" height="${s*0.40}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
-  const tri = `<path d="M ${cx} ${s*0.24} L ${s*0.74} ${s*0.72} L ${s*0.26} ${s*0.72} Z" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" />`;
-  const dot = `<circle cx="${cx}" cy="${cy}" r="${s*cfg.rDot}" fill="${stroke}" />`;
-
-  const bull = `
-    <circle cx="${cx}" cy="${cy}" r="${s*cfg.rRing}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
-    <circle cx="${cx}" cy="${cy}" r="${s*cfg.rBullDot}" fill="${stroke}" />
-  `;
-
-  const circle_cross = `
-    <circle cx="${cx}" cy="${cy}" r="${s*cfg.rCross}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />
-    <path d="M ${cx} ${s*(0.5-cfg.rCross)} V ${s*(0.5+cfg.rCross)} M ${s*(0.5-cfg.rCross)} ${cy} H ${s*(0.5+cfg.rCross)}"
-      stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
-  `;
-
-  const dA = cfg.diamond.a, dB = cfg.diamond.b;
-  const diamond = `<path d="M ${cx} ${s*dA} L ${s*dB} ${cy} L ${cx} ${s*dB} L ${s*dA} ${cy} Z"
-        fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-
-  let shape = circle;
-  if (sym==="square") shape = square;
-  if (sym==="triangle") shape = tri;
-  if (sym==="dot") shape = dot;
-  if (sym==="ring") shape = ring;
-  if (sym==="bullseye") shape = bull;
-  if (sym==="circle_cross") shape = circle_cross;
-  if (sym==="diamond") shape = diamond;
-
-  return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
-    ${bg}
-    ${shape}
-  </svg>`;
-}
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+      ${bg}
+      ${shape}
+    </svg>`;
+  }
 
   function triominoOptionSVG(opt, size=64){
     const s = size;
@@ -502,7 +479,7 @@
         parts += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="2"/>`;
         if (r===er && c===ec) continue; // 空き
         const sym = opt.symbols3[idx++];
-        const icon = symbolSVG(sym, Math.floor(cell*0.78), "opt");
+        const icon = symbolSVG(sym, Math.floor(cell*0.78));
         parts += `<g transform="translate(${x + cell*0.11}, ${y + cell*0.11})">${icon}</g>`;
       }
     }
@@ -519,7 +496,7 @@
   ];
   const getRule = (id) => RULES.find(r => r.id===id);
 
-  // 行ルール×列ルール（増やしたいならここにセット追加するだけ）
+  // 行ルール×列ルール
   const RULESETS = [
     { row:"xor",  col:"xor"  },
     { row:"or",   col:"xor"  },
@@ -644,7 +621,7 @@ Rule: A→B は 90°回転 / C→? も 90°回転`;
     };
   }
 
-  // ========= Generator C: Q37簡略（triomino 4x4 / 同じ記号が2回ずつ） =========
+  // ========= Generator C: triomino 4x4 =========
   function pickValidLHole4x4(){
     const inBounds = (r,c)=> (r>=0 && r<4 && c>=0 && c<4);
     const makeL = (r,c,o)=>{
@@ -676,8 +653,8 @@ Rule: A→B は 90°回転 / C→? も 90°回転`;
     const empty2x2 = lOrientationToEmpty2x2(hole.orientation);
 
     const pool = shuffle([...SYMBOLS]);
-    const singles = pool.slice(0,3);   // 1回しか出ない3種
-    const doubles = pool.slice(3,8);   // 2回ずつ出る5種
+    const singles = pool.slice(0,3);
+    const doubles = pool.slice(3,8);
 
     const fill = [];
     singles.forEach(s=>fill.push(s));
@@ -723,8 +700,6 @@ Rule: A→B は 90°回転 / C→? も 90°回転`;
     const debugText =
 `Type: triomino4x4
 Rule: 8種類の記号が最終的に2回ずつ出る（=16マス）
-盤面は13マス表示 → 1回しか出てない記号が3つある
-その3つ全部を含むL字(2x2)を選ぶのが正解
 Singles: ${singles.join(", ")}
 HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
 
@@ -739,7 +714,6 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
       debugText,
       rowRuleId:"triomino",
       colRuleId:"triomino",
-      promptText:"同じ記号は最終的に2回ずつ出る。今1回しか出てない記号が3つあるので、それが全部入ってるL字を選べ。",
     };
   }
 
@@ -747,7 +721,7 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
   const GENERATORS = [
     { w: 60, fn: genMatrixRowColOps },
     { w: 20, fn: genRelation2x2Rotate },
-    { w: 20, fn: genTriominoPairs4x4 }, // ★ Q37簡略
+    { w: 20, fn: genTriominoPairs4x4 },
   ];
   function pickGenerator(){
     const sum = GENERATORS.reduce((s,x)=>s+x.w,0);
@@ -787,6 +761,7 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
     $msg.textContent = text;
   }
 
+  // A案：デカブサは見切れ防止で contain、チー娘は cover（見栄え）
   function setChar(kind=null, text="……"){
     if (!kind){
       $charSlot.style.display = "none";
@@ -795,6 +770,11 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
     $charImg.src = IMG[kind];
     $charImg.alt = kind;
     $charBubble.textContent = text;
+
+    // ここがポイント
+    $charImg.style.objectFit = (kind === "dekabusa") ? "contain" : "cover";
+    $charImg.style.background = "rgba(255,255,255,0.08)";
+
     $charSlot.style.display = "flex";
   }
 
@@ -841,7 +821,7 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
             mark.textContent = "?";
             cell.appendChild(mark);
           } else {
-            cell.innerHTML = symbolSVG(q.grid[r][c], 54, "board");
+            cell.innerHTML = symbolSVG(q.grid[r][c], 54);
           }
           $matrix.appendChild(cell);
         }
@@ -961,8 +941,8 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
     renderOptions(q);
     $debug.textContent = q.debugText;
 
-    // ここを統一
-setMessage("？の部分に入る図形を選んでください。");
+    // ★ ここは統一（答えを教える文は出さない）
+    setMessage("？の部分に入る図形を選んでください。");
 
     updatePill();
   }
