@@ -494,7 +494,7 @@
         parts += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="2"/>`;
         if (r===er && c===ec) continue; // 空き
         const sym = opt.symbols3[idx++];
-        const icon = symbolSVG(sym, Math.floor(cell*0.78));
+        const icon = symbolSVG(sym, Math.floor(cell*0.78), "opt");
         parts += `<g transform="translate(${x + cell*0.11}, ${y + cell*0.11})">${icon}</g>`;
       }
     }
@@ -833,7 +833,7 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
             mark.textContent = "?";
             cell.appendChild(mark);
           } else {
-            cell.innerHTML = symbolSVG(q.grid[r][c], 54);
+            cell.innerHTML = symbolSVG(q.grid[r][c], 54, "board");
           }
           $matrix.appendChild(cell);
         }
