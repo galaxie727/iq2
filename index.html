@@ -94,15 +94,10 @@
   margin-bottom: 10px;
   }
   .charImg{
-  position: absolute;
-  right: 0;
-  bottom: 0;
-
-  width: clamp(260px, 62vw, 520px);  /* ← 赤枠くらい。好みで調整 */
-  aspect-ratio: 16 / 9;              /* 横長 */
+  width: clamp(120px, 34vw, 260px);  /* ←少し横も拡張 */
+  max-height: 200px;                 /* ←ここ追加 */
   height: auto;
-
-  object-fit: cover;                  /* 横長枠に収める */
+  object-fit: contain;               /* ←超重要 */
   border-radius: 14px;
   background: rgba(255,255,255,0.08);
   border: 1px solid var(--stroke-strong);
