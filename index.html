@@ -79,7 +79,7 @@
     --ruleGlow: rgba(255,175,90,0.22);
     --ruleStroke: rgba(255,175,90,0.54);
   }
-  /* ユニーク6択 = イエロー */
+  /* “ユニーク/ペア系” = イエロー（triominoも流用） */
   .rule-unique{
     --ruleGlow: rgba(255,225,90,0.20);
     --ruleStroke: rgba(255,225,90,0.54);
@@ -237,7 +237,7 @@
   details > summary{ cursor:pointer; font-weight: 900; color: rgba(233,238,246,0.82); }
   .small{ color: var(--muted); font-size: 12px; line-height: 1.55; margin-top: 8px; white-space: pre-wrap; }
 
-  /* SVG枠が沈まない */
+  /* SVG枠が沈まない（黒マス側のみ） */
   .matrix svg rect[stroke="#000"]{ stroke: rgba(255,255,255,0.35) !important; }
 </style>
 </head>
@@ -286,6 +286,13 @@
   const countOnes = (c) => c.reduce((s,v)=>s+(v?1:0),0);
   const cellKey = (c) => c.join("");
 
+  // triomino option key
+  const triKey = (op) => {
+    const e = op.empty2x2.join(",");
+    const s = op.symbols3.slice().sort().join("|");
+    return `${e}::${s}`;
+  };
+
   // ========= Cell ops (3×3 flat 9) =========
   function rot90(c){ return [c[6],c[3],c[0], c[7],c[4],c[1], c[8],c[5],c[2]]; }
   function rot180(c){ return rot90(rot90(c)); }
@@ -328,7 +335,7 @@
     return Array(9).fill(0);
   }
 
-  // ========= SVG render =========
+  // ========= SVG render (3x3 black squares) =========
   function cellToSVG(c, size=140){
     const s = size/3;
     let rects = "";
@@ -391,6 +398,81 @@
     return { options, ansIndex };
   }
 
+  // ========= Symbol SVG (triomino) =========
+  const SYMBOLS = [
+    "circle",
+    "square",
+    "triangle",
+    "dot",
+    "bullseye",
+    "circle_cross",
+    "diamond",
+    "ring",
+  ];
+
+  function symbolSVG(sym, size=44){
+    const s = size;
+    const cx = s/2, cy = s/2;
+    const stroke = "#111";
+    const sw = 3.2;
+
+    const bg = `<rect width="${s}" height="${s}" rx="${Math.max(8, s*0.18)}" ry="${Math.max(8, s*0.18)}" fill="#fff"/>`;
+
+    const circle = `<circle cx="${cx}" cy="${cy}" r="${s*0.22}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const square = `<rect x="${s*0.30}" y="${s*0.30}" width="${s*0.40}" height="${s*0.40}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const tri = `<path d="M ${cx} ${s*0.24} L ${s*0.74} ${s*0.72} L ${s*0.26} ${s*0.72} Z" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const dot = `<circle cx="${cx}" cy="${cy}" r="${s*0.10}" fill="${stroke}" />`;
+    const ring = `<circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    const bull = `
+      <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
+      <circle cx="${cx}" cy="${cy}" r="${s*0.10}" fill="${stroke}" />
+    `;
+    const circle_cross = `
+      <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
+      <path d="M ${cx} ${s*0.22} V ${s*0.78} M ${s*0.22} ${cy} H ${s*0.78}"
+        stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
+    `;
+    const diamond = `<path d="M ${cx} ${s*0.22} L ${s*0.78} ${cy} L ${cx} ${s*0.78} L ${s*0.22} ${cy} Z"
+        fill="none" stroke="${stroke}" stroke-width="${sw}"/>`;
+
+    let shape = circle;
+    if (sym==="square") shape = square;
+    if (sym==="triangle") shape = tri;
+    if (sym==="dot") shape = dot;
+    if (sym==="ring") shape = ring;
+    if (sym==="bullseye") shape = bull;
+    if (sym==="circle_cross") shape = circle_cross;
+    if (sym==="diamond") shape = diamond;
+
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+      ${bg}
+      ${shape}
+    </svg>`;
+  }
+
+  function triominoOptionSVG(opt, size=64){
+    const s = size;
+    const pad = 6;
+    const cell = (s - pad*2) / 2;
+    const [er, ec] = opt.empty2x2;
+
+    let idx = 0;
+    let parts = `<rect width="${s}" height="${s}" rx="12" ry="12" fill="#fff" stroke="rgba(0,0,0,0.18)" stroke-width="2"/>`;
+
+    for(let r=0;r<2;r++){
+      for(let c=0;c<2;c++){
+        const x = pad + c*cell;
+        const y = pad + r*cell;
+        parts += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="2"/>`;
+        if (r===er && c===ec) continue; // 空き
+        const sym = opt.symbols3[idx++];
+        const icon = symbolSVG(sym, Math.floor(cell*0.78));
+        parts += `<g transform="translate(${x + cell*0.11}, ${y + cell*0.11})">${icon}</g>`;
+      }
+    }
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">${parts}</svg>`;
+  }
+
   // ========= Rule registry =========
   const RULES = [
     { id:"xor",  name:"右 = 左 XOR 中央",  f:(L,M)=>xor(L,M) },
@@ -436,7 +518,6 @@
       const a31 = colRule.f(a11, a21);
       const a32 = colRule.f(a12, a22);
 
-      // 右下は「行で計算」でも「列で計算」でも一致する必要がある
       const fromRow = rowRule.f(a31, a32);
       const fromCol = colRule.f(a13, a23);
       if (!deepEq(fromRow, fromCol)) return null;
@@ -462,7 +543,6 @@
       grid = g; break;
     }
     if (!grid){
-      // 保険：xor-xor
       const a11 = randCellDense(2,4);
       const a12 = randCellDense(2,4);
       const a21 = randCellDense(2,4);
@@ -528,129 +608,110 @@ Rule: A→B は 90°回転 / C→? も 90°回転`;
     };
   }
 
-  // ========= Generator C: ユニーク6択（“1個しかない3つ”が全部入った選択肢） =========
-  // 3x3の中の「6個の固定位置」を“記号”として使う（見た目が分かりやすい）
-  // 6つの記号（= 6つの位置）を、各選択肢は「3記号の組み合わせ」として生成。
-  // 条件：3つの記号は1回だけ、残り3つの記号は2回ずつ出る。正解は「1回だけの3つ」を全部含む選択肢。
-  function genUniqueOneOff(){
-    const basePosPool = shuffle([0,2,3,5,6,8]); // 6個（角+左右中央）
-    const symbols = basePosPool.map(p => {
-      const c = Array(9).fill(0);
-      c[p]=1;
-      return c;
-    });
-
-    const singlesIdx = shuffle([0,1,2,3,4,5]).slice(0,3);
-    const doublesIdx = [0,1,2,3,4,5].filter(i=>!singlesIdx.includes(i));
-
-    const S = singlesIdx;
-    const D = doublesIdx;
-
-    const makeCellFromSymbols = (idxs) => {
-      let out = Array(9).fill(0);
-      idxs.forEach(i => out = or(out, symbols[i]));
-      return out;
+  // ========= Generator C: Q37簡略（triomino 4x4 / 同じ記号が2回ずつ） =========
+  function pickValidLHole4x4(){
+    const inBounds = (r,c)=> (r>=0 && r<4 && c>=0 && c<4);
+    const makeL = (r,c,o)=>{
+      const a=[r,c];
+      let b,c2;
+      if (o===0){ b=[r,c+1]; c2=[r+1,c]; } // ┌
+      if (o===1){ b=[r,c-1]; c2=[r+1,c]; } // ┐
+      if (o===2){ b=[r,c+1]; c2=[r-1,c]; } // └
+      if (o===3){ b=[r,c-1]; c2=[r-1,c]; } // ┘
+      return [a,b,c2];
     };
+    while(true){
+      const r = rndInt(0,3), c = rndInt(0,3), o = rndInt(0,3);
+      const cells = makeL(r,c,o);
+      if (cells.every(([rr,cc])=>inBounds(rr,cc))) return { cells, orientation:o };
+    }
+  }
 
-    // ランダム探索で条件満たす6択を作る
-    // 6つの三つ組（各3記号）を作り、出現回数が singles=1、doubles=2 になるようにする
-    function tryBuild(){
-      // 正解（シングル3つ全部）
-      const correctTrip = S.slice(); // 3要素
-      // 残り5つを作る（総出現回数: singles 3回 / doubles 6回）
-      // 正解で singles を全部1回使ったので、残りでは singles は0回、doubles は6回を満たせばOK。
-      // つまり残り5問は「doublesだけで3つ選ぶ」を中心にして、重複しないように組む。
-      const remaining = [];
+  function lOrientationToEmpty2x2(orientation){
+    if (orientation===0) return [1,1];
+    if (orientation===1) return [1,0];
+    if (orientation===2) return [0,1];
+    return [0,0];
+  }
 
-      // doublesの3つから作れる三つ組は1通りだけ（D全部）なので、それだけだと重複する
-      // そこで、doublesを2つ + singlesを1つ にしても成立させる。ただし singles はもう“1回だけ”条件が壊れるのでダメ。
-      // → なので「記号」方式は“厳密条件”を満たすには組み合わせ探索が必要。
-      // ここでは「記号」ではなく「記号“セット”」を作って counts を満たす三つ組の集合を探索する。
+  function genTriominoPairs4x4(){
+    const hole = pickValidLHole4x4();
+    const holeCells = hole.cells;
+    const empty2x2 = lOrientationToEmpty2x2(hole.orientation);
 
-      // 探索：6個の記号の出現回数ターゲットを作る
-      // targetCount[i] = (iがsingleなら1 else 2)
-      const targetCount = Array(6).fill(0);
-      S.forEach(i => targetCount[i]=1);
-      D.forEach(i => targetCount[i]=2);
+    const pool = shuffle([...SYMBOLS]);
+    const singles = pool.slice(0,3);   // 1回しか出ない3種
+    const doubles = pool.slice(3,8);   // 2回ずつ出る5種
 
-      // 6つの三つ組をランダム生成して、ターゲット一致&正解が一意になるまで探す
-      const allTriplets = [];
-      allTriplets.push(correctTrip.slice().sort((a,b)=>a-b));
+    const fill = [];
+    singles.forEach(s=>fill.push(s));
+    doubles.forEach(d=>{ fill.push(d); fill.push(d); });
+    const fillSyms = shuffle(fill);
 
-      let guard=0;
-      while (guard++ < 5000){
-        // 残り5つをランダムに作る
-        allTriplets.length = 1;
+    const isHole = (r,c)=> holeCells.some(([rr,cc])=>rr===r && cc===c);
 
-        while (allTriplets.length < 6){
-          const trip = shuffle([0,1,2,3,4,5]).slice(0,3).sort((a,b)=>a-b);
-          // 重複禁止
-          if (allTriplets.some(t => t.join(",")===trip.join(","))) continue;
-          allTriplets.push(trip);
-        }
-
-        // カウント計算
-        const cnt = Array(6).fill(0);
-        allTriplets.forEach(tri => tri.forEach(i => cnt[i]++));
-        if (!deepEq(cnt, targetCount)) continue;
-
-        // 正解条件：「single3つ全部含む」三つ組が1つだけ
-        const isCorrect = (tri) => S.every(i=>tri.includes(i));
-        const correctOnes = allTriplets.filter(isCorrect);
-        if (correctOnes.length !== 1) continue;
-
-        // それが最初に入れた correctTrip と一致してること
-        if (correctOnes[0].join(",") !== correctTrip.slice().sort((a,b)=>a-b).join(",")) continue;
-
-        return allTriplets;
+    const grid = Array.from({length:4}, ()=>Array(4).fill(null));
+    let idx = 0;
+    for(let r=0;r<4;r++){
+      for(let c=0;c<4;c++){
+        if (isHole(r,c)) continue;
+        grid[r][c] = fillSyms[idx++];
       }
-      return null;
     }
 
-    const triplets = tryBuild() || [
-      // 最悪の保険（成立してない可能性があるので debug に出す）
-      S.slice().sort((a,b)=>a-b),
-      shuffle([0,1,2]).sort((a,b)=>a-b),
-      shuffle([3,4,5]).sort((a,b)=>a-b),
-      shuffle([0,3,4]).sort((a,b)=>a-b),
-      shuffle([1,4,5]).sort((a,b)=>a-b),
-      shuffle([2,3,5]).sort((a,b)=>a-b),
-    ];
+    const answerSymbols = shuffle([...singles]);
+    const answerPlacement = holeCells.map(([r,c],i)=>({ r,c,symbol: answerSymbols[i] }));
 
-    const correctTripSorted = S.slice().sort((a,b)=>a-b).join(",");
-    const optionsCells = triplets.map(tri => makeCellFromSymbols(tri));
-    const ansIndex = triplets.findIndex(tri => tri.join(",")===correctTripSorted);
-    const answer = optionsCells[ansIndex];
+    const options = [];
+    options.push({ empty2x2, symbols3: answerSymbols.slice() });
 
-    // 盤面は「?」だけにして、選択肢で解くタイプにする（見やすい）
-    const grid = [[null]];
+    while(options.length < 6){
+      const cand = shuffle([...SYMBOLS]).slice(0,3);
+      const set = new Set(cand);
+      const allSingles = singles.every(s => set.has(s));
+      if (allSingles) continue;
+
+      const sCount = cand.filter(x=>singles.includes(x)).length;
+      if (sCount === 0) continue;
+
+      const op = { empty2x2, symbols3: cand };
+      const k = triKey(op);
+      if (options.some(x => triKey(x)===k)) continue;
+
+      options.push(op);
+    }
+
+    const shuffled = shuffle(options);
+    const ansIndex = shuffled.findIndex(op => singles.every(s => new Set(op.symbols3).has(s)));
 
     const debugText =
-`Type: unique6
-Rule: 同じ記号が2つずつ + 1個しかない記号が3つ → その3つ全部を含む選択肢が正解
-Singles(symbol index): ${S.join(",")}
-Doubles(symbol index): ${D.join(",")}
-ansIndex: ${ansIndex}`;
+`Type: triomino4x4
+Rule: 8種類の記号が最終的に2回ずつ出る（=16マス）
+盤面は13マス表示 → 1回しか出てない記号が3つある
+その3つ全部を含むL字(2x2)を選ぶのが正解
+Singles: ${singles.join(", ")}
+HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
 
     return {
-      type:"unique6",
-      size:1,
+      type:"triomino4x4",
+      size:4,
       grid,
-      answer,
-      options: optionsCells,
+      holeCells,
+      answerPlacement,
+      options: shuffled,
       ansIndex,
       debugText,
-      rowRuleId:"unique",
-      colRuleId:"unique",
-      promptText:"6つの選択肢の中で『1回しか出てこない記号』が3つある。それが全部入ってる選択肢を選べ。",
+      rowRuleId:"triomino",
+      colRuleId:"triomino",
+      promptText:"同じ記号は最終的に2回ずつ出る。今1回しか出てない記号が3つあるので、それが全部入ってるL字を選べ。",
     };
   }
 
   // ========= Generators =========
   const GENERATORS = [
-    { w: 65, fn: genMatrixRowColOps },
+    { w: 60, fn: genMatrixRowColOps },
     { w: 20, fn: genRelation2x2Rotate },
-    { w: 15, fn: genUniqueOneOff },
+    { w: 20, fn: genTriominoPairs4x4 }, // ★ Q37簡略
   ];
   function pickGenerator(){
     const sum = GENERATORS.reduce((s,x)=>s+x.w,0);
@@ -708,18 +769,16 @@ ansIndex: ${ansIndex}`;
 
   function applyRuleColor(q){
     if (!$card || !q) return;
-    // rule- を全部剥がす
     [...$card.classList].forEach(c => { if (c.startsWith("rule-")) $card.classList.remove(c); });
 
     if (q.type === "relation2x2"){
       $card.classList.add("rule-rot2");
       return;
     }
-    if (q.type === "unique6"){
+    if (q.type === "triomino4x4"){
       $card.classList.add("rule-unique");
       return;
     }
-    // matrix3x3
     const row = q.rowRuleId || "xor";
     const col = q.colRuleId || "xor";
     $card.classList.add(`rule-${row}${col}`);
@@ -730,18 +789,31 @@ ansIndex: ${ansIndex}`;
     $matrix.innerHTML = "";
     $matrix.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
 
-    // unique6 は盤面を「?」だけにする
-    if (q.type === "unique6"){
-      const cell = document.createElement("div");
-      cell.className = "cell q";
-      const mark = document.createElement("div");
-      mark.className = "qmark";
-      mark.textContent = "?";
-      cell.appendChild(mark);
-      $matrix.appendChild(cell);
+    // triomino4x4：4x4 記号で、穴3マスに ? を表示
+    if (q.type === "triomino4x4"){
+      $matrix.innerHTML = "";
+      $matrix.style.gridTemplateColumns = `repeat(4, 1fr)`;
+      const isHole = (r,c)=> q.holeCells.some(([rr,cc])=>rr===r && cc===c);
+
+      for(let r=0;r<4;r++){
+        for(let c=0;c<4;c++){
+          const cell = document.createElement("div");
+          cell.className = "cell" + (isHole(r,c) ? " q" : "");
+          if (isHole(r,c)){
+            const mark = document.createElement("div");
+            mark.className = "qmark";
+            mark.textContent = "?";
+            cell.appendChild(mark);
+          } else {
+            cell.innerHTML = symbolSVG(q.grid[r][c], 54);
+          }
+          $matrix.appendChild(cell);
+        }
+      }
       return;
     }
 
+    // 3x3 / 2x2：右下を ? にする
     const holeIndex = n*n - 1;
     for (let i=0;i<n*n;i++){
       const cell = document.createElement("div");
@@ -762,7 +834,7 @@ ansIndex: ${ansIndex}`;
 
   function renderOptions(q){
     $opts.innerHTML = "";
-    q.options.forEach((optCell, idx) => {
+    q.options.forEach((optAny, idx) => {
       const btn = document.createElement("button");
       btn.className = "opt";
       btn.type = "button";
@@ -774,7 +846,12 @@ ansIndex: ${ansIndex}`;
 
       const thumb = document.createElement("div");
       thumb.className = "thumb";
-      thumb.innerHTML = cellToSVG(optCell, 64);
+
+      if (q.type === "triomino4x4"){
+        thumb.innerHTML = triominoOptionSVG(optAny, 64);
+      } else {
+        thumb.innerHTML = cellToSVG(optAny, 64);
+      }
 
       btn.appendChild(badge);
       btn.appendChild(thumb);
@@ -804,10 +881,15 @@ ansIndex: ${ansIndex}`;
     const ansLabel = LABELS[state.q.ansIndex];
     setMessage(`正解は ${ansLabel} です。`, "ok");
 
-    // unique6 は盤面に正解を表示
-    if (state.q.type === "unique6"){
-      const cell = $matrix.querySelector(".cell");
-      cell.innerHTML = cellToSVG(state.q.answer, 140);
+    // triomino：穴3マスを埋めて表示
+    if (state.q.type === "triomino4x4"){
+      state.q.answerPlacement.forEach(p => {
+        state.q.grid[p.r][p.c] = p.symbol;
+      });
+      const savedHole = state.q.holeCells;
+      state.q.holeCells = []; // ?表示を消して描画
+      renderMatrix(state.q);
+      state.q.holeCells = savedHole;
       return;
     }
 
@@ -823,21 +905,27 @@ ansIndex: ${ansIndex}`;
 
     // 生成（失敗したらリトライ）
     let q = null;
-    for (let t=0;t<60;t++){
+    for (let t=0;t<80;t++){
       q = pickGenerator()();
-      const uniq = new Set(q.options.map(cellKey)).size;
-      const ones = countOnes(q.answer);
-      if (uniq >= 6 && ones >= 1 && ones <= 8) break;
+
+      // 型ごとの最低条件チェック
+      if (q.type === "triomino4x4"){
+        const uniq = new Set(q.options.map(triKey)).size;
+        if (uniq >= 6 && q.ansIndex >= 0) break;
+      } else {
+        const uniq = new Set(q.options.map(cellKey)).size;
+        const ones = countOnes(q.answer);
+        if (uniq >= 6 && ones >= 1 && ones <= 8) break;
+      }
     }
 
     state.q = q;
     applyRuleColor(q);
     renderMatrix(q);
     renderOptions(q);
-
     $debug.textContent = q.debugText;
 
-    if (q.type === "unique6"){
+    if (q.type === "triomino4x4"){
       setMessage(q.promptText || "選択肢から正解を選んでください。");
     } else {
       setMessage("右下（?）に入る図形を選んでください。");
