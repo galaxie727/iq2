@@ -87,32 +87,44 @@
 
   /* ===== キャラ専用エリア（盤面の外） ===== */
   .charSlot{
-    display:none;
-    align-items:flex-end;
-    justify-content:flex-end;
-    gap: 10px;
-    margin-bottom: 10px;
+  display:none;
+  position: relative;
+  width: 100%;
+  min-height: 150px;          /* 上の空間を確保（必要なら増減） */
+  margin-bottom: 10px;
   }
   .charImg{
-    width: clamp(92px, 24vw, 170px);
-    height: auto;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid var(--stroke-strong);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
-  }
+  position: absolute;
+  right: 0;
+  bottom: 0;
+
+  width: clamp(260px, 62vw, 520px);  /* ← 赤枠くらい。好みで調整 */
+  aspect-ratio: 16 / 9;              /* 横長 */
+  height: auto;
+
+  object-fit: cover;                  /* 横長枠に収める */
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--stroke-strong);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+}
   .bubble{
-    max-width: clamp(160px, 46vw, 320px);
-    padding: 10px 12px;
-    border-radius: 18px;
-    background: rgba(0,0,0,0.45);
-    border: 1px solid rgba(255,255,255,0.20);
-    color: rgba(233,238,246,0.92);
-    font-weight: 900;
-    letter-spacing: .04em;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-    backdrop-filter: blur(6px);
-  }
+  position: absolute;
+  left: 0;
+  top: 0;
+
+  max-width: clamp(160px, 40vw, 320px);
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.20);
+  color: rgba(233,238,246,0.92);
+  font-weight: 900;
+  letter-spacing: .04em;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+  max-width: clamp(140px, 34vw, 260px);
+}
 
   .matrix{
     display:grid;
