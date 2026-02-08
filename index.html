@@ -727,11 +727,155 @@ HoleCells: ${holeCells.map(x=>`(${x[0]},${x[1]})`).join(" ")}`;
     };
   }
 
+// ========= Generator D: count-add (黒マス数) =========
+function genCountAdd(){
+  // 9マス中から k 個を選んで黒にするテンプレ生成
+  const makeByCount = (k) => {
+    const pos = shuffle([...Array(9)].map((_,i)=>i)).slice(0, k);
+    const c = Array(9).fill(0);
+    pos.forEach(i => c[i]=1);
+    return c;
+  };
+
+  // 足し算が破綻しないように範囲を制限
+  const a11k = rndInt(1,3);
+  const a12k = rndInt(1,3);
+  const a21k = rndInt(1,3);
+  const a22k = rndInt(1,3);
+
+  const a11 = makeByCount(a11k);
+  const a12 = makeByCount(a12k);
+  const a21 = makeByCount(a21k);
+  const a22 = makeByCount(a22k);
+
+  const a13 = makeByCount(Math.min(8, a11k + a12k));
+  const a23 = makeByCount(Math.min(8, a21k + a22k));
+
+  // 列も同じルールにして整合を取る（行列一致）
+  const a31 = makeByCount(Math.min(8, a11k + a21k));
+  const a32 = makeByCount(Math.min(8, a12k + a22k));
+
+  // a33 は 行でも列でも同じ合計になる
+  const target = Math.min(8, (a11k+a12k) + (a21k+a22k)); // = (a11k+a21k)+(a12k+a22k)
+  const a33 = makeByCount(target);
+
+  const grid = [
+    [a11,a12,a13],
+    [a21,a22,a23],
+    [a31,a32,null],
+  ];
+  const answer = a33;
+  const { options, ansIndex } = buildOptions(answer);
+
+  const debugText =
+`Type: countAdd3x3
+Rule: 右は(左+中央)の黒マス数になる（配置はランダムテンプレ）
+Counts: (${a11k}+${a12k}=${countOnes(a13)}), (${a21k}+${a22k}=${countOnes(a23)})`;
+
+  return {
+    type:"countAdd3x3",
+    size:3,
+    grid,
+    answer,
+    options,
+    ansIndex,
+    debugText,
+    rowRuleId:"unique",
+    colRuleId:"unique",
+  };
+}
+
+// ========= Generator E: shift-chain =========
+function genShiftChain(){
+  const base = randCellDense(2,4);
+  const a11 = base;
+  const a12 = shiftRight(a11);
+  const a13 = shiftRight(a12);
+
+  const a21 = shiftDown(a11);
+  const a22 = shiftRight(a21);
+  const a23 = shiftRight(a22);
+
+  const a31 = shiftDown(a21);
+  const a32 = shiftRight(a31);
+  const a33 = shiftRight(a32);
+
+  const grid = [
+    [a11,a12,a13],
+    [a21,a22,a23],
+    [a31,a32,null],
+  ];
+  const answer = a33;
+  const { options, ansIndex } = buildOptions(answer);
+
+  const debugText =
+`Type: shiftChain3x3
+Rule: 右へ1つシフト（列方向）。下は下へ1つシフト（行方向）。`;
+
+  return {
+    type:"shiftChain3x3",
+    size:3,
+    grid,
+    answer,
+    options,
+    ansIndex,
+    debugText,
+    rowRuleId:"rot2",
+    colRuleId:"rot2",
+  };
+}
+
+  // ========= Generator F: mirror-xor =========
+function genMirrorXor(){
+  const a11 = randCellDense(2,4);
+  const a12 = randCellDense(2,4);
+  const a21 = randCellDense(2,4);
+  const a22 = randCellDense(2,4);
+
+  const a13 = xor(a11, flipH(a11));
+  const a23 = xor(a21, flipH(a21));
+
+  const a31 = xor(a12, flipH(a12));
+  const a32 = xor(a22, flipH(a22));
+
+  // 整合：右下は「上段の右」 XOR 「下段の右」
+  const a33 = xor(a13, a23);
+
+  const grid = [
+    [a11,a12,a13],
+    [a21,a22,a23],
+    [a31,a32,null],
+  ];
+  const answer = a33;
+  const { options, ansIndex } = buildOptions(answer);
+
+  const debugText =
+`Type: mirrorXor3x3
+Rule: 右 = 左 XOR 左の左右反転（対称合成）`;
+
+  return {
+    type:"mirrorXor3x3",
+    size:3,
+    grid,
+    answer,
+    options,
+    ansIndex,
+    debugText,
+    rowRuleId:"xor",
+    colRuleId:"xor",
+  };
+}
+  
   // ========= Generators =========
   const GENERATORS = [
     { w: 60, fn: genMatrixRowColOps },
     { w: 20, fn: genRelation2x2Rotate },
     { w: 20, fn: genTriominoPairs4x4 },
+    { w: 10, fn: genCountAdd },
+  { w: 5,  fn: genShiftChain },
+  { w: 5,  fn: genMirrorXor },
+
+    
   ];
   function pickGenerator(){
     const sum = GENERATORS.reduce((s,x)=>s+x.w,0);
