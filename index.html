@@ -424,51 +424,54 @@
 ];
 
   function symbolSVG(sym, size=44){
-    const s = size;
-    const cx = s/2, cy = s/2;
-    const stroke = "#111";
-    const sw = 3.2;
+  const s = size;
+  const cx = s/2, cy = s/2;
+  const stroke = "#111";
+  const sw = 3.2;
 
-    const bg = `<rect width="${s}" height="${s}" rx="${Math.max(8, s*0.18)}" ry="${Math.max(8, s*0.18)}" fill="#fff"/>`;
-    const dot = `<circle cx="${cx}" cy="${cy}" r="${s*0.13}" fill="${stroke}" />`; // ← 0.10→0.13くらいが見やすい
+  const bg = `<rect width="${s}" height="${s}" rx="${Math.max(8, s*0.18)}" ry="${Math.max(8, s*0.18)}" fill="#fff"/>`;
 
-const circle_slash = `
-  <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
-  <path d="M ${s*0.28} ${s*0.72} L ${s*0.72} ${s*0.28}"
-    stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
-`;
+  // 見やすい黒丸（少し大きめ）
+  const dot = `<circle cx="${cx}" cy="${cy}" r="${s*0.13}" fill="${stroke}" />`;
 
-    const circle = `<circle cx="${cx}" cy="${cy}" r="${s*0.22}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
-    const square = `<rect x="${s*0.30}" y="${s*0.30}" width="${s*0.40}" height="${s*0.40}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
-    const tri = `<path d="M ${cx} ${s*0.24} L ${s*0.74} ${s*0.72} L ${s*0.26} ${s*0.72} Z" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
-    const dot = `<circle cx="${cx}" cy="${cy}" r="${s*0.10}" fill="${stroke}" />`;
-    const ring = `<circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
-    const bull = `
-      <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
-      <circle cx="${cx}" cy="${cy}" r="${s*0.10}" fill="${stroke}" />
-    `;
-    const circle_cross = `
-      <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
-      <path d="M ${cx} ${s*0.22} V ${s*0.78} M ${s*0.22} ${cy} H ${s*0.78}"
-        stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
-    `;
-    const diamond = `<path d="M ${cx} ${s*0.22} L ${s*0.78} ${cy} L ${cx} ${s*0.78} L ${s*0.22} ${cy} Z"
-        fill="none" stroke="${stroke}" stroke-width="${sw}"/>`;
+  const circle = `<circle cx="${cx}" cy="${cy}" r="${s*0.22}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+  const square = `<rect x="${s*0.30}" y="${s*0.30}" width="${s*0.40}" height="${s*0.40}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+  const tri = `<path d="M ${cx} ${s*0.24} L ${s*0.74} ${s*0.72} L ${s*0.26} ${s*0.72} Z" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
 
-    let shape = circle;
-    if (sym==="square") shape = square;
-    if (sym==="triangle") shape = tri;
-    if (sym==="dot") shape = dot;
-    if (sym==="ring") shape = ring;
-    if (sym==="bullseye") shape = bull;
-    if (sym==="circle_cross") shape = circle_cross;
-    if (sym==="diamond") shape = diamond;
-if (sym==="circle_slash") shape = circle_slash;
-    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
-      ${bg}
-      ${shape}
-    </svg>`;
-  }
+  const bull = `
+    <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
+    <circle cx="${cx}" cy="${cy}" r="${s*0.10}" fill="${stroke}" />
+  `;
+
+  const circle_cross = `
+    <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
+    <path d="M ${cx} ${s*0.22} V ${s*0.78} M ${s*0.22} ${cy} H ${s*0.78}"
+      stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
+  `;
+
+  const diamond = `<path d="M ${cx} ${s*0.22} L ${s*0.78} ${cy} L ${cx} ${s*0.78} L ${s*0.22} ${cy} Z"
+    fill="none" stroke="${stroke}" stroke-width="${sw}"/>`;
+
+  const circle_slash = `
+    <circle cx="${cx}" cy="${cy}" r="${s*0.26}" fill="none" stroke="${stroke}" stroke-width="${sw}" />
+    <path d="M ${s*0.28} ${s*0.72} L ${s*0.72} ${s*0.28}"
+      stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/>
+  `;
+
+  let shape = circle;
+  if (sym==="square") shape = square;
+  else if (sym==="triangle") shape = tri;
+  else if (sym==="dot") shape = dot;
+  else if (sym==="bullseye") shape = bull;
+  else if (sym==="circle_cross") shape = circle_cross;
+  else if (sym==="diamond") shape = diamond;
+  else if (sym==="circle_slash") shape = circle_slash;
+
+  return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+    ${bg}
+    ${shape}
+  </svg>`;
+}
 
   function triominoOptionSVG(opt, size=64){
     const s = size;
